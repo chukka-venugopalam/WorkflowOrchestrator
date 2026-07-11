@@ -1,0 +1,14 @@
+Task: Add a user authentication system with JWT tokens
+
+Context:
+We have a FastAPI application with SQLAlchemy models.
+The user model already exists in models/user.py.
+We need login, logout, and token refresh endpoints.
+
+Requirements:
+- Use Python 3.12+ with type hints.
+- Use PyJWT for token encoding/decoding.
+- Store refresh tokens in the database.
+- Add proper error handling.
+- Follow existing project conventions.
+- Add docstrings for all public functions.
