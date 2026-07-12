@@ -1,0 +1,15 @@
+Task: {task_description}
+
+Context:
+{context}
+
+Requirements:
+- Follow clean architecture principles.
+- Use type hints and dataclasses where appropriate.
+- Handle errors gracefully.
+- Write readable, maintainable code.
+- Add docstrings for all public functions and classes.
+- Follow existing project conventions.
+
+Additional Instructions:
+{additional_instructions}
