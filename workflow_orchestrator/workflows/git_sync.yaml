@@ -1,0 +1,18 @@
+name: Git Sync
+description: Check Git status, commit, and push changes
+
+steps:
+  - git:
+      action: status
+
+  - git:
+      action: add
+
+  - terminal:
+      command: git commit -m "Workflow auto-commit"
+      timeout: 15
+      on_failure: continue
+
+  - git:
+      action: push
+      on_failure: continue

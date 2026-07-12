@@ -24,6 +24,17 @@ env/
 # Logs
 logs/*.log
 
+# Execution reports (auto-generated)
+reports/*.json
+!reports/.gitkeep
+
+# Workflow definitions (user-specific)
+workflows/*.yaml
+!workflows/example.yaml
+!workflows/morning_setup.yaml
+!workflows/git_sync.yaml
+!workflows/.gitkeep
+
 # Data
 data/history.json
 

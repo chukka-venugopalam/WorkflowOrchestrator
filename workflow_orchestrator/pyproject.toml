@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "workflow-orchestrator"
+version = "2.0.0"
+description = "A reusable workflow automation framework for developers"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+    { name = "Workflow Orchestrator Contributors" },
+]
+requires-python = ">=3.12"
+keywords = ["automation", "workflow", "devops", "cli"]
+
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Build Tools",
+    "Topic :: System :: Automation",
+]
+
+dependencies = [
+    "pyperclip>=1.8.2",
+    "PyYAML>=6.0",
+    "rich>=13.0",
+    "typer>=0.9.0",
+    "apscheduler>=3.10.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "mypy>=1.0",
+    "ruff>=0.1.0",
+]
+
+[project.scripts]
+workflow = "workflow_orchestrator.cli:entry_point"
+workflow-orchestrator = "workflow_orchestrator.main:main"
+
+[tool.setuptools.packages.find]
+include = ["workflow_orchestrator*"]

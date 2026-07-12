@@ -1,0 +1,19 @@
+name: default
+description: Default configuration profile
+
+# Browser executable path (leave empty to auto-detect)
+brave_executable_path: ""
+
+# VS Code executable path
+vscode_executable_path: "code"
+
+# Default project directory
+default_project_directory: ""
+
+# URLs
+github_repository_url: ""
+render_dashboard_url: ""
+vercel_dashboard_url: ""
+
+# Freebuff command
+freebuff_command: ""

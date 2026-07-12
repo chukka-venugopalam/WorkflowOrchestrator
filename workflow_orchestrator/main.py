@@ -1,11 +1,12 @@
-"""Main entry point for the AI Developer Workflow Orchestrator.
+"""Main entry point for the Workflow Orchestrator.
 
-This CLI application automates repetitive actions between development
-tools such as Freebuff, VS Code, Brave Browser, Git, GitHub, Render,
-and Vercel.
+This is the **Rich interactive CLI** menu (backward-compatible
+with v1 usage via ``python main.py``).  For the Typer-based CLI,
+use the ``workflow`` command instead.
 
 Usage:
-    python main.py
+    python main.py          # Rich interactive menu
+    workflow run ...        # Typer CLI (see cli.py)
 """
 
 from __future__ import annotations
@@ -16,12 +17,21 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
 
-# Ensure the project root is on sys.path for imports
+from rich import print as rprint
+from rich.console import Console
+from rich.layout import Layout
+from rich.panel import Panel
+from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.prompt import Confirm, Prompt
+from rich.table import Table
+from rich.text import Text
+
+# Ensure the project root is on sys.path
 PROJECT_ROOT = Path(__file__).resolve().parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from config import config_manager, ConfigurationManager
+from config import config_manager
 from modules.logger import setup_logger, logger
 from modules.terminal import run_command
 from modules.clipboard import copy_to_clipboard
@@ -31,7 +41,6 @@ from modules.browser import (
     open_render,
     open_render_logs,
     open_vercel,
-    open_vercel_deployment,
 )
 from modules.vscode import open_vscode
 from modules.github import auto_commit_and_push, git_status
@@ -41,20 +50,24 @@ from modules.vercel import open_dashboard as vercel_open_dashboard
 from modules.vercel import open_deployment as vercel_open_deployment
 from modules.prompts import load_template, format_prompt
 
+from workflow_orchestrator.engine import WorkflowEngine
+from workflow_orchestrator.plugins.registry import default_registry
+from workflow_orchestrator.reports import list_reports, get_statistics, save_report
+from workflow_orchestrator.scanner import ProjectScanner
+
 HISTORY_FILE = PROJECT_ROOT / "data" / "history.json"
+WORKFLOWS_DIR = PROJECT_ROOT / "workflows"
+
+console = Console()
 
 
 # ---------------------------------------------------------------------------
-# History helpers
+# History helpers (preserved from v1)
 # ---------------------------------------------------------------------------
 
 
 def load_history() -> list[dict[str, Any]]:
-    """Load the execution history from the JSON file.
-
-    Returns:
-        list[dict]: List of history entries, newest first.
-    """
+    """Load the execution history from the JSON file."""
     if not HISTORY_FILE.exists():
         return []
 
@@ -68,31 +81,19 @@ def load_history() -> list[dict[str, Any]]:
 
 
 def save_history(entry: dict[str, Any]) -> None:
-    """Append an entry to the execution history.
-
-    Args:
-        entry: Dictionary with keys like 'timestamp', 'action', 'status'.
-    """
+    """Append an entry to the execution history."""
     history = load_history()
-    history.insert(0, entry)  # newest first
+    history.insert(0, entry)
 
     try:
         HISTORY_FILE.parent.mkdir(parents=True, exist_ok=True)
-        HISTORY_FILE.write_text(
-            json.dumps(history, indent=2), encoding="utf-8"
-        )
+        HISTORY_FILE.write_text(json.dumps(history, indent=2), encoding="utf-8")
     except OSError as exc:
         logger.error("Failed to save history: %s", exc)
 
 
 def record_action(action: str, status: str, details: str = "") -> None:
-    """Record an action in the history log.
-
-    Args:
-        action: Description of the action performed.
-        status: 'success', 'failure', or 'cancelled'.
-        details: Optional additional details about the action.
-    """
+    """Record an action in the history log."""
     entry = {
         "timestamp": datetime.now().isoformat(),
         "action": action,
@@ -103,43 +104,60 @@ def record_action(action: str, status: str, details: str = "") -> None:
 
 
 # ---------------------------------------------------------------------------
-# Menu display
+# Menu display (Rich)
 # ---------------------------------------------------------------------------
 
 
 def display_menu() -> None:
-    """Print the main CLI menu to the console."""
-    print("\n" + "=" * 45)
-    print("   AI Developer Workflow Orchestrator")
-    print("=" * 45)
-    print()
-    print("  1.  Copy Prompt to Clipboard")
-    print("  2.  Open Freebuff")
-    print("  3.  Open VS Code")
-    print("  4.  Git Push")
-    print("  5.  Open GitHub")
-    print("  6.  Open Render Dashboard")
-    print("  7.  Open Render Logs")
-    print("  8.  Open Vercel Dashboard")
-    print("  9.  Open Website / Deployment URL")
-    print(" 10.  Run Custom Terminal Command")
-    print(" 11.  Configuration")
-    print(" 12.  Run Full Workflow")
-    print(" 13.  View History")
-    print(" 14.  Exit")
-    print()
+    """Print the Rich main CLI menu."""
+    console.print()
+    console.print(Panel.fit(
+        "[bold cyan]Workflow Orchestrator v2[/]",
+        subtitle="Automation Framework",
+    ))
+    console.print()
+
+    menu_items = [
+        ("1", "Copy Prompt to Clipboard"),
+        ("2", "Open Freebuff"),
+        ("3", "Open VS Code"),
+        ("4", "Git Push"),
+        ("5", "Open GitHub"),
+        ("6", "Open Render Dashboard"),
+        ("7", "Open Render Logs"),
+        ("8", "Open Vercel Dashboard"),
+        ("9", "Open Website / Deployment URL"),
+        ("10", "Run Custom Terminal Command"),
+        ("11", "Configuration"),
+        ("12", "Run Full Workflow"),
+        ("13", "View History"),
+        ("14", "Run YAML Workflow"),
+        ("15", "Scan Project"),
+        ("16", "View Reports"),
+        ("17", "List Plugins"),
+        ("18", "Exit"),
+    ]
+
+    table = Table(show_header=False, border_style="dim", box=None)
+    table.add_column("Key", style="cyan", width=4)
+    table.add_column("Action", style="white")
+
+    for key, action in menu_items:
+        table.add_row(key, action)
+
+    console.print(table)
+    console.print()
 
 
 # ---------------------------------------------------------------------------
-# Menu action handlers
+# Existing action handlers (preserved and enhanced with Rich)
 # ---------------------------------------------------------------------------
-
 
 def action_copy_prompt() -> None:
     """Prompt user for ChatGPT-generated text and copy it to clipboard."""
-    print("\n--- Copy Prompt to Clipboard ---")
-    print("Paste the prompt generated by ChatGPT (Ctrl+Z then Enter to finish):")
-    print()
+    console.rule("[bold cyan]Copy Prompt to Clipboard[/]")
+    console.print("Paste the prompt generated by ChatGPT (Ctrl+Z then Enter to finish):")
+    console.print()
 
     lines: list[str] = []
     try:
@@ -153,53 +171,52 @@ def action_copy_prompt() -> None:
 
     if not prompt_text:
         logger.warning("No prompt text entered.")
-        print("⚠  No text entered. Cancelled.")
+        console.print("[yellow]⚠  No text entered. Cancelled.[/]")
         return
 
     if copy_to_clipboard(prompt_text):
-        print("✓ Prompt copied to clipboard.")
+        console.print(f"[green]✓[/] Prompt copied to clipboard. ({len(prompt_text)} chars)")
         record_action("Copy prompt", "success", f"{len(prompt_text)} chars")
     else:
-        print("✗ Failed to copy to clipboard.")
+        console.print("[red]✗ Failed to copy to clipboard.[/]")
         record_action("Copy prompt", "failure")
 
 
 def action_open_freebuff() -> None:
     """Launch Freebuff using the configured command."""
-    print("\n--- Open Freebuff ---")
+    console.rule("[bold cyan]Open Freebuff[/]")
 
     freebuff_cmd = config_manager.config.freebuff_command
     if not freebuff_cmd:
         logger.warning("Freebuff command is not configured.")
-        print("⚠  Freebuff command is not configured.")
-        print("   Set it in Configuration (option 11) or data/config.json.")
+        console.print("[yellow]⚠  Freebuff command is not configured.[/]")
+        console.print("   Set it in Configuration (option 11) or data/config.json.")
         record_action("Open Freebuff", "failure", "command not configured")
         return
 
     try:
         from modules.terminal import run_command_async
-
         run_command_async(freebuff_cmd)
-        print(f"✓ Freebuff launched: {freebuff_cmd}")
+        console.print(f"[green]✓[/] Freebuff launched: [cyan]{freebuff_cmd}[/]")
         logger.info("Freebuff launched: %s", freebuff_cmd)
         record_action("Open Freebuff", "success", freebuff_cmd)
     except Exception as exc:
         logger.error("Failed to launch Freebuff: %s", exc)
-        print(f"✗ Failed to launch Freebuff: {exc}")
+        console.print(f"[red]✗ Failed to launch Freebuff: {exc}[/]")
         record_action("Open Freebuff", "failure", str(exc))
 
 
 def action_open_vscode() -> None:
     """Open VS Code with the configured project directory."""
-    print("\n--- Open VS Code ---")
+    console.rule("[bold cyan]Open VS Code[/]")
 
     project_dir = config_manager.config.default_project_directory
     if not project_dir:
         logger.warning("Default project directory is not configured.")
-        print("⚠  Default project directory is not configured.")
-        print("   Set it in Configuration (option 11) or data/config.json.")
+        console.print("[yellow]⚠  Default project directory is not configured.[/]")
+        console.print("   Set it in Configuration (option 11) or data/config.json.")
 
-        custom = input("Enter project path (or press Enter to cancel): ").strip()
+        custom = Prompt.ask("Enter project path", default="")
         if custom:
             project_dir = custom
         else:
@@ -208,231 +225,430 @@ def action_open_vscode() -> None:
 
     path = Path(project_dir).expanduser().resolve()
     if open_vscode(path):
-        print(f"✓ VS Code opened with project: {path}")
+        console.print(f"[green]✓[/] VS Code opened with project: [cyan]{path}[/]")
         record_action("Open VS Code", "success", str(path))
     else:
-        print("✗ Failed to open VS Code.")
+        console.print("[red]✗ Failed to open VS Code.[/]")
         record_action("Open VS Code", "failure", str(path))
 
 
 def action_git_push() -> None:
     """Run git commit and push with optional custom message."""
-    print("\n--- Git Push ---")
+    console.rule("[bold cyan]Git Push[/]")
 
-    # Check status first
     state = git_status()
     if state is None:
-        print("✗ Not a Git repository or project directory not configured.")
+        console.print("[red]✗ Not a Git repository or project directory not configured.[/]")
         record_action("Git push", "failure", "not a Git repo or not configured")
         return
 
-    print(f"   Branch: {state.branch}")
-    print(f"   Changes: {len(state.untracked_files)} untracked, "
-          f"{len(state.modified_files)} modified, {len(state.staged_files)} staged")
-    print(f"   Ahead: {state.ahead}, Behind: {state.behind}")
+    console.print(f"   Branch: [cyan]{state.branch}[/]")
+    console.print(f"   Changes: {len(state.untracked_files)} untracked, "
+                  f"{len(state.modified_files)} modified, {len(state.staged_files)} staged")
+    console.print(f"   Ahead: {state.ahead}, Behind: {state.behind}")
 
     if not state.has_changes and state.ahead == 0:
-        print("\n✓ No changes to push.")
+        console.print("\n[green]✓ No changes to push.[/]")
         return
 
-    message = input("\nCommit message (or press Enter for auto-generated): ").strip()
-    print()
+    message = Prompt.ask("Commit message", default="")
+    console.print()
 
     if auto_commit_and_push(message or None):
-        print("✓ Changes committed and pushed successfully.")
+        console.print("[green]✓ Changes committed and pushed successfully.[/]")
         record_action("Git push", "success", state.branch)
     else:
-        print("✗ Git push failed. Check logs for details.")
+        console.print("[red]✗ Git push failed. Check logs for details.[/]")
         record_action("Git push", "failure", state.branch)
 
 
 def action_open_github() -> None:
     """Open the configured GitHub repository in browser."""
-    print("\n--- Open GitHub ---")
+    console.rule("[bold cyan]Open GitHub[/]")
     if open_github():
-        print("✓ GitHub repository opened in browser.")
+        console.print("[green]✓ GitHub repository opened in browser.[/]")
         record_action("Open GitHub", "success")
     else:
-        print("✗ Failed to open GitHub. Is the URL configured?")
+        console.print("[red]✗ Failed to open GitHub. Is the URL configured?[/]")
         record_action("Open GitHub", "failure")
 
 
 def action_open_render() -> None:
     """Open the Render dashboard in browser."""
-    print("\n--- Open Render Dashboard ---")
+    console.rule("[bold cyan]Open Render Dashboard[/]")
     if render_open_dashboard() or open_render():
-        print("✓ Render dashboard opened in browser.")
+        console.print("[green]✓ Render dashboard opened in browser.[/]")
         record_action("Open Render", "success")
     else:
-        print("✗ Failed to open Render. Is the URL configured?")
+        console.print("[red]✗ Failed to open Render. Is the URL configured?[/]")
         record_action("Open Render", "failure")
 
 
 def action_open_render_logs() -> None:
     """Open the Render logs page in browser."""
-    print("\n--- Open Render Logs ---")
+    console.rule("[bold cyan]Open Render Logs[/]")
     if render_open_logs() or open_render_logs():
-        print("✓ Render logs opened in browser.")
+        console.print("[green]✓ Render logs opened in browser.[/]")
         record_action("Open Render Logs", "success")
     else:
-        print("✗ Failed to open Render logs. Is the URL configured?")
+        console.print("[red]✗ Failed to open Render logs. Is the URL configured?[/]")
         record_action("Open Render Logs", "failure")
 
 
 def action_open_vercel() -> None:
     """Open the Vercel dashboard in browser."""
-    print("\n--- Open Vercel Dashboard ---")
+    console.rule("[bold cyan]Open Vercel Dashboard[/]")
     if vercel_open_dashboard() or open_vercel():
-        print("✓ Vercel dashboard opened in browser.")
+        console.print("[green]✓ Vercel dashboard opened in browser.[/]")
         record_action("Open Vercel", "success")
     else:
-        print("✗ Failed to open Vercel. Is the URL configured?")
+        console.print("[red]✗ Failed to open Vercel. Is the URL configured?[/]")
         record_action("Open Vercel", "failure")
 
 
 def action_open_website() -> None:
     """Open a deployment URL in browser."""
-    print("\n--- Open Website / Deployment URL ---")
-    url = input("Enter the website URL: ").strip()
+    console.rule("[bold cyan]Open Website / Deployment URL[/]")
+    url = Prompt.ask("Enter the website URL")
 
     if not url:
-        print("⚠  No URL entered. Cancelled.")
+        console.print("[yellow]⚠  No URL entered. Cancelled.[/]")
         record_action("Open Website", "cancelled")
         return
 
     if open_url(url) or vercel_open_deployment(url):
-        print(f"✓ Opened: {url}")
+        console.print(f"[green]✓[/] Opened: [cyan]{url}[/]")
         record_action("Open Website", "success", url)
     else:
-        print("✗ Failed to open URL.")
+        console.print("[red]✗ Failed to open URL.[/]")
         record_action("Open Website", "failure", url)
 
 
 def action_run_command() -> None:
     """Prompt for and execute a custom terminal command."""
-    print("\n--- Run Custom Terminal Command ---")
-    command = input("$ ").strip()
+    console.rule("[bold cyan]Run Custom Terminal Command[/]")
+    command = Prompt.ask("$ ")
 
     if not command:
-        print("⚠  No command entered. Cancelled.")
+        console.print("[yellow]⚠  No command entered. Cancelled.[/]")
         return
 
-    print()
-    result = run_command(command)
+    console.print()
+    with console.status("[cyan]Running command...[/]"):
+        result = run_command(command)
 
-    print("─" * 45)
+    console.print("─" * 45)
     if result.stdout:
-        print(result.stdout)
+        console.print(result.stdout)
     if result.stderr:
-        print(result.stderr, file=sys.stderr)
-    print("─" * 45)
-    print(f"Exit code: {result.exit_code}")
+        console.print(f"[red]{result.stderr}[/]")
+    console.print("─" * 45)
+
+    status_color = "green" if result.success else "red"
+    console.print(f"Exit code: [{status_color}]{result.exit_code}[/]")
 
     record_action("Custom command", "success" if result.success else "failure", command)
 
 
 def action_configuration() -> None:
     """Open the interactive configuration menu."""
-    print("\n--- Configuration ---")
-    print("1. View current configuration")
-    print("2. Edit configuration interactively")
-    print("3. Reset to defaults")
-    print()
+    console.rule("[bold cyan]Configuration[/]")
+    console.print("1. View current configuration")
+    console.print("2. Edit configuration interactively")
+    console.print("3. Reset to defaults")
+    console.print("4. List profiles")
+    console.print("5. Switch profile")
+    console.print()
 
-    choice = input("Select option: ").strip()
+    choice = Prompt.ask("Select option", default="1")
 
     if choice == "1":
-        print("\nCurrent Configuration:")
-        print("-" * 45)
         cfg = config_manager.config
-        print(f"  Brave path:      {cfg.brave_executable_path or '(not set)'}")
-        print(f"  VS Code path:    {cfg.vscode_executable_path}")
-        print(f"  Project dir:     {cfg.default_project_directory or '(not set)'}")
-        print(f"  GitHub URL:      {cfg.github_repository_url or '(not set)'}")
-        print(f"  Render URL:      {cfg.render_dashboard_url or '(not set)'}")
-        print(f"  Vercel URL:      {cfg.vercel_dashboard_url or '(not set)'}")
-        print(f"  Freebuff cmd:    {cfg.freebuff_command or '(not set)'}")
+        table = Table(title="Current Configuration")
+        table.add_column("Key", style="cyan")
+        table.add_column("Value", style="green")
+        table.add_row("Active Profile", cfg.active_profile or "default")
+        table.add_row("Brave Path", cfg.brave_executable_path or "(not set)")
+        table.add_row("VS Code Path", cfg.vscode_executable_path)
+        table.add_row("Project Dir", cfg.default_project_directory or "(not set)")
+        table.add_row("GitHub URL", cfg.github_repository_url or "(not set)")
+        table.add_row("Render URL", cfg.render_dashboard_url or "(not set)")
+        table.add_row("Vercel URL", cfg.vercel_dashboard_url or "(not set)")
+        table.add_row("Freebuff Cmd", cfg.freebuff_command or "(not set)")
         if cfg.custom:
-            print(f"  Custom:          {cfg.custom}")
-        print()
+            for k, v in cfg.custom.items():
+                table.add_row(f"[dim]{k}[/]", str(v))
+        console.print(table)
+        console.print()
 
     elif choice == "2":
         config_manager.configure_interactive()
         record_action("Configure", "success")
 
     elif choice == "3":
-        confirm = input("Reset all configuration to defaults? (y/N): ").strip().lower()
-        if confirm == "y":
+        if Confirm.ask("Reset all configuration to defaults?"):
             from config import AppConfig
             config_manager._config = AppConfig()
             config_manager.save()
-            print("✓ Configuration reset to defaults.")
+            console.print("[green]✓ Configuration reset to defaults.[/]")
             record_action("Reset config", "success")
+
+    elif choice == "4":
+        profiles = config_manager.list_profiles()
+        table = Table(title="Available Profiles")
+        table.add_column("Profile", style="cyan")
+        table.add_column("Active", style="green")
+        for profile in profiles:
+            is_active = profile == config_manager.config.active_profile
+            table.add_row(profile, "[green]✓[/]" if is_active else "")
+        console.print(table)
+
+    elif choice == "5":
+        profile = Prompt.ask("Profile name")
+        if config_manager.switch_profile(profile):
+            console.print(f"[green]✓[/] Switched to profile '[cyan]{profile}[/]'")
+            record_action("Switch profile", "success", profile)
         else:
-            print("Cancelled.")
+            console.print(f"[red]✗ Profile '{profile}' not found.[/]")
 
     else:
-        print("Invalid option.")
+        console.print("[red]Invalid option.[/]")
 
 
 def action_view_history() -> None:
     """Display the execution history."""
-    print("\n--- Execution History ---")
+    console.rule("[bold cyan]Execution History[/]")
 
     history = load_history()
     if not history:
-        print("No history recorded yet.")
+        console.print("[yellow]No history recorded yet.[/]")
         return
 
-    print(f"{'#':<4} {'Timestamp':<22} {'Action':<25} {'Status':<10}")
-    print("-" * 65)
+    table = Table(title="Execution History (last 20)")
+    table.add_column("#", justify="right", style="dim")
+    table.add_column("Timestamp", style="cyan")
+    table.add_column("Action", style="white")
+    table.add_column("Status")
 
     for i, entry in enumerate(history[:20], 1):
         ts = entry.get("timestamp", "?")[:19]
-        action = entry.get("action", "?")[:24]
+        action = entry.get("action", "?")[:30]
         status = entry.get("status", "?")
-        print(f"{i:<4} {ts:<22} {action:<25} {status:<10}")
 
+        if status == "success":
+            status_display = "[green]success[/]"
+        elif status == "failure":
+            status_display = "[red]failure[/]"
+        else:
+            status_display = f"[yellow]{status}[/]"
+
+        table.add_row(str(i), ts, action, status_display)
+
+    console.print(table)
     if len(history) > 20:
-        print(f"\n... and {len(history) - 20} more entries.")
-    print()
+        console.print(f"\n[dim]... and {len(history) - 20} more entries.[/]")
+    console.print()
+
+
+def action_run_yaml_workflow() -> None:
+    """Run a YAML workflow file."""
+    console.rule("[bold cyan]Run YAML Workflow[/]")
+
+    # Show available workflows
+    if WORKFLOWS_DIR.exists():
+        yaml_files = sorted(WORKFLOWS_DIR.glob("*.yaml"))
+        if yaml_files:
+            console.print("Available workflows:")
+            for i, f in enumerate(yaml_files, 1):
+                console.print(f"  {i}. {f.name}")
+            console.print()
+
+    path_str = Prompt.ask("Path to workflow YAML file", default="")
+    if not path_str:
+        console.print("[yellow]Cancelled.[/]")
+        return
+
+    path = Path(path_str).expanduser().resolve()
+    if not path.exists():
+        # Try relative to workflows directory
+        alt_path = WORKFLOWS_DIR / path_str
+        if alt_path.exists():
+            path = alt_path
+        else:
+            console.print(f"[red]Workflow file not found: {path}[/]")
+            return
+
+    try:
+        from workflow_orchestrator.models import WorkflowDefinition
+
+        default_registry.discover()
+        workflow = WorkflowDefinition.from_yaml(path)
+        engine = WorkflowEngine()
+
+        console.print(f"Running workflow: [cyan]{workflow.name}[/] ({len(workflow.steps)} steps)")
+        console.print()
+
+        report = engine.execute(workflow)
+        report_path = save_report(report)
+
+        # Display results
+        if report.success:
+            console.print(f"[green]✓[/] Workflow completed successfully!")
+        else:
+            console.print(f"[red]✗[/] Workflow failed: {report.error}")
+
+        console.print(f"   Duration: {report.duration:.2f}s")
+        console.print(f"   Steps: {report.successful_steps}/{report.total_steps}")
+        console.print(f"   Report: {report_path}")
+
+        # Show step details
+        if report.steps:
+            console.print()
+            step_table = Table(title="Steps")
+            step_table.add_column("#", justify="right", style="dim")
+            step_table.add_column("Step", style="cyan")
+            step_table.add_column("Plugin", style="blue")
+            step_table.add_column("Duration", justify="right")
+            step_table.add_column("Status")
+
+            for i, step in enumerate(report.steps, 1):
+                from workflow_orchestrator.models import StepStatus
+                if step.status == StepStatus.SUCCESS:
+                    s = "[green]✓[/]"
+                elif step.status == StepStatus.FAILURE:
+                    s = "[red]✗[/]"
+                else:
+                    s = f"[yellow]{step.status.value}[/]"
+                step_table.add_row(str(i), step.step_name[:35], step.plugin, f"{step.duration:.2f}s", s)
+
+            console.print(step_table)
+
+        record_action("YAML workflow", "success" if report.success else "failure", path.name)
+
+    except Exception as exc:
+        logger.exception("Failed to run workflow: %s", exc)
+        console.print(f"[red]Error running workflow: {exc}[/]")
+        record_action("YAML workflow", "failure", str(exc))
+
+
+def action_scan_project() -> None:
+    """Scan a project directory."""
+    console.rule("[bold cyan]Project Scanner[/]")
+
+    path_str = Prompt.ask("Project path", default=".")
+    project_path = Path(path_str).expanduser().resolve()
+
+    if not project_path.exists():
+        console.print(f"[red]Path not found: {project_path}[/]")
+        return
+
+    with console.status("[cyan]Scanning project...[/]"):
+        scanner = ProjectScanner()
+        info = scanner.scan(project_path)
+
+    table = Table(title=f"Project: {info.name}")
+    table.add_column("Property", style="cyan")
+    table.add_column("Value", style="green")
+
+    table.add_row("Root", str(info.root))
+    table.add_row("Languages", ", ".join(info.languages) or "[dim]none[/]")
+    table.add_row("Git", "[green]✓[/]" if info.has_git else "[red]✗[/]")
+    table.add_row("Docker", "[green]✓[/]" if info.has_docker else "[red]✗[/]")
+    table.add_row("Package Manager", info.package_manager or "[dim]none[/]")
+    table.add_row("Python", info.python_version or "[dim]not detected[/]")
+    table.add_row("Node.js", info.node_version or "[dim]not detected[/]")
+    table.add_row("Java", info.java_version or "[dim]not detected[/]")
+    table.add_row("Rust", info.rust_toolchain or "[dim]not detected[/]")
+    table.add_row("Frameworks", ", ".join(info.frameworks) or "[dim]none[/]")
+    table.add_row("Scripts", ", ".join(info.scripts[:10]) or "[dim]none[/]")
+    table.add_row("Dependencies", str(info.dependencies) or "0")
+
+    console.print(table)
+    record_action("Project scan", "success", str(project_path))
+
+
+def action_view_reports() -> None:
+    """View execution reports and statistics."""
+    console.rule("[bold cyan]Execution Reports[/]")
+
+    # Show statistics
+    s = get_statistics()
+    stat_table = Table(title="Statistics")
+    stat_table.add_column("Metric", style="cyan")
+    stat_table.add_column("Value", style="green")
+    stat_table.add_row("Total Runs", str(s["total_runs"]))
+    stat_table.add_row("Success Rate", f"{s['success_rate']}%")
+    stat_table.add_row("Avg Duration", f"{s['average_duration']}s")
+    console.print(stat_table)
+    console.print()
+
+    # Show recent reports
+    reports = list_reports(limit=10)
+    if not reports:
+        console.print("[yellow]No reports yet.[/]")
+        return
+
+    report_table = Table(title="Recent Reports")
+    report_table.add_column("Workflow", style="cyan")
+    report_table.add_column("Time", style="white")
+    report_table.add_column("Duration", justify="right")
+    report_table.add_column("Steps", justify="right")
+    report_table.add_column("Status")
+
+    for r in reports:
+        status = "[green]Success[/]" if r["success"] else "[red]Failed[/]"
+        report_table.add_row(
+            r["workflow_name"],
+            r["timestamp"][:19] if r["timestamp"] else "?",
+            f"{r['duration']:.1f}s",
+            f"{r['successful_steps']}/{r['total_steps']}",
+            status,
+        )
+
+    console.print(report_table)
+
+
+def action_list_plugins() -> None:
+    """List all registered plugins."""
+    console.rule("[bold cyan]Registered Plugins[/]")
+
+    default_registry.discover()
+    plugin_list = default_registry.list_plugins()
+
+    if not plugin_list:
+        console.print("[yellow]No plugins registered.[/]")
+        return
+
+    table = Table(title=f"Plugins ({len(plugin_list)})")
+    table.add_column("Name", style="cyan")
+    table.add_column("Description", style="green")
+    table.add_column("Version", justify="right")
+
+    for p in plugin_list:
+        table.add_row(p["name"], p["description"][:60], p["version"])
+
+    console.print(table)
 
 
 # ---------------------------------------------------------------------------
-# Full workflow
+# Full workflow (preserved and enhanced with Rich)
 # ---------------------------------------------------------------------------
 
 
 def run_full_workflow() -> None:
-    """Execute the complete AI-assisted coding workflow.
-
-    Steps:
-        1. Get task description from the user
-        2. Accept ChatGPT-generated prompt and copy it to clipboard
-        3. Launch Freebuff
-        4. Wait for user confirmation that Freebuff finished
-        5. Open VS Code with the project
-        6. Run Git commit and push
-        7. Open GitHub repository
-        8. Open deployment platform (Render / Vercel)
-        9. Open the deployed website
-        10. Report results
-    """
-    print("\n" + "=" * 45)
-    print("         Full Workflow Execution")
-    print("=" * 45)
-    print()
+    """Execute the complete AI-assisted coding workflow."""
+    console.rule("[bold cyan]Full Workflow Execution[/]")
     record_action("Workflow started", "success")
 
     # Step 1: Task description
-    print("Step 1/10: Describe the task")
-    task = input("What task are you working on? ").strip()
-    print()
+    console.print("[bold]Step 1/10:[/] Describe the task")
+    task = Prompt.ask("What task are you working on?")
+    console.print()
 
     # Step 2: ChatGPT prompt
-    print("Step 2/10: Paste the ChatGPT-generated prompt")
-    print("(Ctrl+Z then Enter to finish)")
-    print()
+    console.print("[bold]Step 2/10:[/] Paste the ChatGPT-generated prompt")
+    console.print("(Ctrl+Z then Enter to finish)")
+    console.print()
 
     lines: list[str] = []
     try:
@@ -445,109 +661,107 @@ def run_full_workflow() -> None:
     prompt_text = "\n".join(lines).strip()
     if prompt_text:
         copy_to_clipboard(prompt_text)
-        print("✓ Prompt copied to clipboard.")
+        console.print("[green]✓ Prompt copied to clipboard.[/]")
     else:
-        print("⚠  No prompt text entered. Skipping clipboard copy.")
-    print()
+        console.print("[yellow]⚠ No prompt text entered. Skipping clipboard copy.[/]")
+    console.print()
 
     # Step 3: Launch Freebuff
-    print("Step 3/10: Launching Freebuff...")
+    console.print("[bold]Step 3/10:[/] Launching Freebuff...")
     freebuff_cmd = config_manager.config.freebuff_command
     if freebuff_cmd:
         try:
             from modules.terminal import run_command_async
             run_command_async(freebuff_cmd)
-            print("✓ Freebuff launched.")
+            console.print("[green]✓ Freebuff launched.[/]")
         except Exception as exc:
-            print(f"⚠  Could not launch Freebuff: {exc}")
+            console.print(f"[yellow]⚠ Could not launch Freebuff: {exc}[/]")
     else:
-        print("⚠  Freebuff command not configured. Skipping.")
-    print()
+        console.print("[yellow]⚠ Freebuff command not configured. Skipping.[/]")
+    console.print()
 
     # Step 4: Wait for Freebuff completion
-    print("Step 4/10: Waiting for Freebuff to complete")
-    input("Press Enter after Freebuff has finished generating/modifying code...")
-    print("✓ Confirmed.")
-    print()
+    console.print("[bold]Step 4/10:[/] Waiting for Freebuff to complete")
+    Prompt.ask("Press Enter after Freebuff has finished generating/modifying code", default="")
+    console.print("[green]✓ Confirmed.[/]")
+    console.print()
 
     # Step 5: Open VS Code
-    print("Step 5/10: Opening VS Code...")
+    console.print("[bold]Step 5/10:[/] Opening VS Code...")
     project_dir = config_manager.config.default_project_directory
     if project_dir:
         path = Path(project_dir).expanduser().resolve()
         if open_vscode(path):
-            print(f"✓ VS Code opened with project: {path}")
+            console.print(f"[green]✓ VS Code opened with project: [cyan]{path}[/]")
         else:
-            print("⚠  Could not open VS Code.")
+            console.print("[yellow]⚠ Could not open VS Code.[/]")
     else:
-        print("⚠  Project directory not configured.")
-    print()
+        console.print("[yellow]⚠ Project directory not configured.[/]")
+    console.print()
 
     # Step 6: Git push
-    print("Step 6/10: Checking Git status and pushing changes...")
+    console.print("[bold]Step 6/10:[/] Checking Git status and pushing changes...")
     state = git_status()
     if state:
-        print(f"   Branch: {state.branch}")
+        console.print(f"   Branch: [cyan]{state.branch}[/]")
         if state.has_changes:
             commit_msg = f"Workflow: {task[:50]}" if task else ""
             if auto_commit_and_push(commit_msg):
-                print("✓ Changes committed and pushed.")
+                console.print("[green]✓ Changes committed and pushed.[/]")
             else:
-                print("✗ Git push failed. See logs.")
+                console.print("[red]✗ Git push failed. See logs.[/]")
         elif state.ahead > 0:
             auto_commit_and_push()
-            print("✓ Pushed pending commits.")
+            console.print("[green]✓ Pushed pending commits.[/]")
         else:
-            print("✓ No new changes to push.")
+            console.print("[green]✓ No new changes to push.[/]")
     else:
-        print("⚠  Git status unavailable.")
-    print()
+        console.print("[yellow]⚠ Git status unavailable.[/]")
+    console.print()
 
     # Step 7: Open GitHub
-    print("Step 7/10: Opening GitHub...")
+    console.print("[bold]Step 7/10:[/] Opening GitHub...")
     if open_github():
-        print("✓ GitHub repository opened.")
+        console.print("[green]✓ GitHub repository opened.[/]")
     else:
-        print("⚠  GitHub URL not configured.")
-    print()
+        console.print("[yellow]⚠ GitHub URL not configured.[/]")
+    console.print()
 
     # Step 8: Open deployment platform
-    print("Step 8/10: Opening deployment platform...")
-    platform = input("Deployment platform (render/vercel, or press Enter to skip): ").strip().lower()
+    console.print("[bold]Step 8/10:[/] Opening deployment platform...")
+    platform = Prompt.ask("Deployment platform (render/vercel, or press Enter to skip)", default="")
 
     if platform == "render":
         if render_open_dashboard() or open_render():
-            print("✓ Render dashboard opened.")
+            console.print("[green]✓ Render dashboard opened.[/]")
         else:
-            print("⚠  Render URL not configured.")
+            console.print("[yellow]⚠ Render URL not configured.[/]")
     elif platform == "vercel":
         if vercel_open_dashboard() or open_vercel():
-            print("✓ Vercel dashboard opened.")
+            console.print("[green]✓ Vercel dashboard opened.[/]")
         else:
-            print("⚠  Vercel URL not configured.")
+            console.print("[yellow]⚠ Vercel URL not configured.[/]")
     else:
-        print("Skipped.")
-    print()
+        console.print("Skipped.")
+    console.print()
 
     # Step 9: Open deployed website
-    print("Step 9/10: Opening the deployed website...")
-    deploy_url = input("Deployment URL (or press Enter to skip): ").strip()
+    console.print("[bold]Step 9/10:[/] Opening the deployed website...")
+    deploy_url = Prompt.ask("Deployment URL (or press Enter to skip)", default="")
     if deploy_url:
         if open_url(deploy_url):
-            print(f"✓ Opened: {deploy_url}")
+            console.print(f"[green]✓ Opened: [cyan]{deploy_url}[/]")
         else:
-            print("⚠  Could not open URL.")
+            console.print("[yellow]⚠ Could not open URL.[/]")
     else:
-        print("Skipped.")
-    print()
+        console.print("Skipped.")
+    console.print()
 
     # Step 10: Report
-    print("=" * 45)
-    print("         Workflow Complete")
-    print("=" * 45)
-    print(f"   Task: {task or '(not specified)'}")
-    print("   Status: ✓ All steps executed")
-    print()
+    console.rule("[bold cyan]Workflow Complete[/]")
+    console.print(f"   Task: {task or '(not specified)'}")
+    console.print("   Status: [green]✓ All steps executed[/]")
+    console.print()
     record_action("Workflow completed", "success", task)
 
 
@@ -557,27 +771,28 @@ def run_full_workflow() -> None:
 
 
 def main() -> None:
-    """Main entry point. Displays the menu and dispatches user choices."""
+    """Main entry point. Displays the Rich menu and dispatches user choices."""
     # Ensure logs directory exists
     log_dir = PROJECT_ROOT / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
 
-    # Re-initialize the root logger with the project-root-aware setup
-    setup_logger(
-        "workflow_orchestrator",
-        log_to_file=True,
-        log_to_console=True,
-    )
+    # Initialize logger
+    setup_logger("workflow_orchestrator", log_to_file=True, log_to_console=True)
 
-    logger.info("Workflow Orchestrator started.")
+    # Discover plugins
+    default_registry.discover()
 
-    print()
-    print("Welcome to the AI Developer Workflow Orchestrator!")
-    print("Type a menu number or press Enter to show the menu.")
+    logger.info("Workflow Orchestrator v2 started.")
+
+    console.print()
+    console.print(Panel.fit(
+        "[bold cyan]Welcome to the Workflow Orchestrator v2[/]",
+        subtitle="Type a menu number or press Enter to show the menu",
+    ))
 
     while True:
         display_menu()
-        choice = input("Select option: ").strip()
+        choice = Prompt.ask("Select option", default="")
 
         if choice == "1":
             action_copy_prompt()
@@ -606,23 +821,31 @@ def main() -> None:
         elif choice == "13":
             action_view_history()
         elif choice == "14":
-            print("\nGoodbye!")
+            action_run_yaml_workflow()
+        elif choice == "15":
+            action_scan_project()
+        elif choice == "16":
+            action_view_reports()
+        elif choice == "17":
+            action_list_plugins()
+        elif choice == "18":
+            console.print("\n[bold]Goodbye![/]")
             logger.info("Workflow Orchestrator exited.")
             break
         else:
-            print("\nInvalid option. Please enter a number between 1 and 14.")
+            console.print("\n[red]Invalid option. Please enter a number between 1 and 18.[/]")
 
-        print("\n" + "─" * 45)
+        console.print("\n" + "─" * 50)
 
 
 if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print("\n\nExited by user.")
+        console.print("\n\n[yellow]Exited by user.[/]")
         logger.info("Workflow Orchestrator interrupted by user.")
         sys.exit(0)
     except Exception as exc:
         logger.exception("Unhandled exception: %s", exc)
-        print(f"\nAn unexpected error occurred: {exc}")
+        console.print(f"\n[red]An unexpected error occurred: {exc}[/]")
         sys.exit(1)

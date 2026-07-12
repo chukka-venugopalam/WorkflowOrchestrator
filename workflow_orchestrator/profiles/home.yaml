@@ -1,0 +1,21 @@
+name: home
+description: Home development environment configuration
+
+# Browser executable
+brave_executable_path: ""
+
+# VS Code
+vscode_executable_path: "code"
+
+# Default project directory (replace with your actual path)
+default_project_directory: "~/projects"
+
+# GitHub
+github_repository_url: "https://github.com/yourusername/your-project"
+
+# Deployment URLs
+render_dashboard_url: ""
+vercel_dashboard_url: ""
+
+# Freebuff
+freebuff_command: ""

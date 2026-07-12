@@ -1,0 +1,15 @@
+name: Example Workflow
+description: A minimal example workflow demonstrating the YAML format
+
+steps:
+  - terminal:
+      command: echo "Hello, Workflow!"
+      timeout: 10
+
+  - wait:
+      seconds: 2
+      message: Pausing between steps...
+
+  - terminal:
+      command: echo "Step 2 complete"
+      timeout: 10

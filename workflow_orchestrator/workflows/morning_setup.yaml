@@ -1,0 +1,19 @@
+name: Morning Setup
+description: Open development tools at the start of the day
+
+steps:
+  - open_app:
+      app: code
+      args: .
+      wait: false
+
+  - browser:
+      action: open_url
+      url: https://github.com
+
+  - terminal:
+      command: git status
+      timeout: 15
+
+  - wait:
+      seconds: 2
