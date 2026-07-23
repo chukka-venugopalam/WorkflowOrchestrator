@@ -1,0 +1,73 @@
+name: Api & Integration - Phase
+description: 'Implementation phase: Api & Integration'
+tags:
+- api_&_integration
+- builder
+steps:
+- name: API & Integration Setup
+  plugin: agent
+  config:
+    task_id: task_api_&_integration_setup
+    goal: Set up and prepare for API & Integration
+    capabilities:
+    - reasoning.planning
+    - tool.filesystem
+    expected_outputs:
+    - api_&_integration_setup_complete
+  on_failure: retry
+  retry:
+    max_retries: 1
+    delay: 1.0
+- name: API Layer
+  plugin: agent
+  config:
+    task_id: task_api_&_integration_api_layer
+    goal: 'Deliver: API endpoints, Request validation, Response formatting'
+    capabilities:
+    - codegen.implementation
+    - reasoning.problem-solving
+    expected_outputs:
+    - API endpoints
+    - Request validation
+    - Response formatting
+    depends_on:
+    - task_api_&_integration_setup
+  on_failure: retry
+  retry:
+    max_retries: 2
+    delay: 2.0
+- name: External Integrations
+  plugin: agent
+  config:
+    task_id: task_api_&_integration_external_integrations
+    goal: 'Deliver: Third-party integrations, Webhook handlers'
+    capabilities:
+    - codegen.implementation
+    - reasoning.problem-solving
+    expected_outputs:
+    - Third-party integrations
+    - Webhook handlers
+    depends_on:
+    - task_api_&_integration_setup
+    - task_api_&_integration_api_layer
+  on_failure: retry
+  retry:
+    max_retries: 2
+    delay: 2.0
+- name: Verify API & Integration
+  plugin: agent
+  config:
+    task_id: task_api_&_integration_verify
+    goal: Verify all deliverables for API & Integration
+    capabilities:
+    - verify.testing
+    - verify.lint
+    - verify.typecheck
+    expected_outputs:
+    - api_&_integration_verification_report
+    depends_on:
+    - task_api_&_integration_external_integrations
+  on_failure: retry
+  retry:
+    max_retries: 2
+    delay: 3.0

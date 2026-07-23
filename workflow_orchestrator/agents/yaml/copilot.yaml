@@ -1,0 +1,24 @@
+# GitHub Copilot Agent Configuration
+name: "GitHub Copilot"
+id: "copilot"
+provider_id: "github.copilot"
+transport: "cli"
+priority: 4
+capabilities:
+  - code_completion
+  - code_generation
+  - code_review
+authentication:
+  type: oauth
+  env_var: "GITHUB_TOKEN"
+limits:
+  max_tokens: 32000
+  max_concurrent: 1
+environment:
+  required_python: "3.8"
+  required_memory_mb: 256
+features:
+  terminal: false
+  file_editing: true
+  sandboxed_execution: false
+  multi_step_planning: false

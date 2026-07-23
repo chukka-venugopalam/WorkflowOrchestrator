@@ -1,0 +1,73 @@
+name: Documentation - Phase
+description: 'Implementation phase: Documentation'
+tags:
+- documentation
+- builder
+steps:
+- name: Documentation Setup
+  plugin: agent
+  config:
+    task_id: task_documentation_setup
+    goal: Set up and prepare for Documentation
+    capabilities:
+    - reasoning.planning
+    - tool.filesystem
+    expected_outputs:
+    - documentation_setup_complete
+  on_failure: retry
+  retry:
+    max_retries: 1
+    delay: 1.0
+- name: Technical Docs
+  plugin: agent
+  config:
+    task_id: task_documentation_technical_docs
+    goal: 'Deliver: Architecture documentation, API reference, Setup guide'
+    capabilities:
+    - codegen.implementation
+    - reasoning.problem-solving
+    expected_outputs:
+    - Architecture documentation
+    - API reference
+    - Setup guide
+    depends_on:
+    - task_documentation_setup
+  on_failure: retry
+  retry:
+    max_retries: 2
+    delay: 2.0
+- name: User Docs
+  plugin: agent
+  config:
+    task_id: task_documentation_user_docs
+    goal: 'Deliver: User manual, Deployment guide'
+    capabilities:
+    - codegen.implementation
+    - reasoning.problem-solving
+    expected_outputs:
+    - User manual
+    - Deployment guide
+    depends_on:
+    - task_documentation_setup
+    - task_documentation_technical_docs
+  on_failure: retry
+  retry:
+    max_retries: 2
+    delay: 2.0
+- name: Verify Documentation
+  plugin: agent
+  config:
+    task_id: task_documentation_verify
+    goal: Verify all deliverables for Documentation
+    capabilities:
+    - verify.testing
+    - verify.lint
+    - verify.typecheck
+    expected_outputs:
+    - documentation_verification_report
+    depends_on:
+    - task_documentation_user_docs
+  on_failure: retry
+  retry:
+    max_retries: 2
+    delay: 3.0

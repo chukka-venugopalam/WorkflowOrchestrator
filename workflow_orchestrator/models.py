@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, ClassVar, Optional
 
 import yaml
 
@@ -122,7 +122,7 @@ class WorkflowStep:
 
     # Step key aliases: maps user-friendly short-form keys to actual plugin names
     # and optionally injects default config values.
-    STEP_ALIASES: dict[str, tuple[str, dict[str, Any]]] = {
+    STEP_ALIASES: ClassVar[dict[str, tuple[str, dict[str, Any]]]] = {
         "open_url": ("browser", {"action": "open_url"}),
         "open_github": ("browser", {"action": "open_github"}),
         "open_render": ("browser", {"action": "open_render"}),

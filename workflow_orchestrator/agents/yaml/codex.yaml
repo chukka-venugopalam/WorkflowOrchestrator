@@ -1,0 +1,26 @@
+# Codex CLI Agent Configuration
+name: "Codex CLI"
+id: "codex"
+provider_id: "openai.codex"
+transport: "cli"
+priority: 3
+capabilities:
+  - code_generation
+  - code_editing
+  - code_review
+  - file_operations
+  - terminal_operations
+authentication:
+  type: api_key
+  env_var: "OPENAI_API_KEY"
+limits:
+  max_tokens: 64000
+  max_concurrent: 1
+environment:
+  required_python: "3.9"
+  required_memory_mb: 512
+features:
+  terminal: true
+  file_editing: true
+  sandboxed_execution: true
+  multi_step_planning: false

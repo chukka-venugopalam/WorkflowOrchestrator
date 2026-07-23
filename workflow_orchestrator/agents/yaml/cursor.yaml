@@ -1,0 +1,25 @@
+# Cursor Agent Configuration
+name: "Cursor"
+id: "cursor"
+provider_id: "cursor.editor"
+transport: "cli"
+priority: 2
+capabilities:
+  - code_generation
+  - code_editing
+  - code_completion
+  - code_review
+  - file_operations
+authentication:
+  type: cli_session
+limits:
+  max_tokens: 64000
+  max_concurrent: 1
+environment:
+  required_python: "3.8"
+  required_memory_mb: 512
+features:
+  terminal: false
+  file_editing: true
+  sandboxed_execution: false
+  multi_step_planning: false

@@ -1,0 +1,38 @@
+# Gemini Provider Configuration
+name: "Gemini (Google)"
+id: "google.gemini"
+transport: "rest_api"
+priority: 3
+quality: 85
+cost: 3  # 1-10 scale
+timeouts:
+  connect: 30
+  read: 120
+  write: 60
+retry:
+  max_retries: 3
+  backoff_base: 2.0
+  backoff_max: 60.0
+authentication:
+  type: api_key
+  env_var: "GEMINI_API_KEY"
+  location: "header"
+  header_name: "x-goog-api-key"
+capabilities:
+  - text_generation
+  - code_generation
+  - analysis
+  - planning
+  - reasoning
+  - explanation
+  - documentation
+limits:
+  max_tokens: 1048576
+  max_concurrent: 5
+  rate_limit: 1500
+  rate_limit_period: "minute"
+workspace:
+  default_model: "gemini-2.0-flash"
+environment:
+  required_python: "3.9"
+  required_memory_mb: 512

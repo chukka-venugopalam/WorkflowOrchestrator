@@ -1,0 +1,74 @@
+name: Testing & Quality - Phase
+description: 'Implementation phase: Testing & Quality'
+tags:
+- testing_&_quality
+- builder
+steps:
+- name: Testing & Quality Setup
+  plugin: agent
+  config:
+    task_id: task_testing_&_quality_setup
+    goal: Set up and prepare for Testing & Quality
+    capabilities:
+    - reasoning.planning
+    - tool.filesystem
+    expected_outputs:
+    - testing_&_quality_setup_complete
+  on_failure: retry
+  retry:
+    max_retries: 1
+    delay: 1.0
+- name: Test Coverage
+  plugin: agent
+  config:
+    task_id: task_testing_&_quality_test_coverage
+    goal: 'Deliver: Unit tests, Integration tests, E2E tests'
+    capabilities:
+    - codegen.implementation
+    - reasoning.problem-solving
+    expected_outputs:
+    - Unit tests
+    - Integration tests
+    - E2E tests
+    depends_on:
+    - task_testing_&_quality_setup
+  on_failure: retry
+  retry:
+    max_retries: 2
+    delay: 2.0
+- name: Quality Gates
+  plugin: agent
+  config:
+    task_id: task_testing_&_quality_quality_gates
+    goal: 'Deliver: Linting configured, Type checking, Code review'
+    capabilities:
+    - codegen.implementation
+    - reasoning.problem-solving
+    expected_outputs:
+    - Linting configured
+    - Type checking
+    - Code review
+    depends_on:
+    - task_testing_&_quality_setup
+    - task_testing_&_quality_test_coverage
+  on_failure: retry
+  retry:
+    max_retries: 2
+    delay: 2.0
+- name: Verify Testing & Quality
+  plugin: agent
+  config:
+    task_id: task_testing_&_quality_verify
+    goal: Verify all deliverables for Testing & Quality
+    capabilities:
+    - verify.testing
+    - verify.lint
+    - verify.typecheck
+    expected_outputs:
+    - testing_&_quality_verification_report
+    depends_on:
+    - task_testing_&_quality_quality_gates
+  on_failure: retry
+  retry:
+    max_retries: 2
+    delay: 3.0

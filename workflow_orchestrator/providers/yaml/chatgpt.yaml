@@ -1,0 +1,40 @@
+# ChatGPT Provider Configuration
+name: "ChatGPT (OpenAI)"
+id: "openai.chatgpt"
+transport: "rest_api"
+priority: 2
+quality: 90
+cost: 4  # 1-10 scale
+timeouts:
+  connect: 30
+  read: 120
+  write: 60
+retry:
+  max_retries: 3
+  backoff_base: 2.0
+  backoff_max: 60.0
+authentication:
+  type: api_key
+  env_var: "OPENAI_API_KEY"
+  location: "header"
+  header_name: "Authorization"
+  header_prefix: "Bearer "
+capabilities:
+  - text_generation
+  - code_generation
+  - code_review
+  - analysis
+  - planning
+  - reasoning
+  - explanation
+  - documentation
+limits:
+  max_tokens: 128000
+  max_concurrent: 5
+  rate_limit: 500
+  rate_limit_period: "minute"
+workspace:
+  default_model: "gpt-4o"
+environment:
+  required_python: "3.9"
+  required_memory_mb: 512

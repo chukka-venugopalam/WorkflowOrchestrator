@@ -1,0 +1,28 @@
+{
+  "contract_id": "709a7f418020",
+  "project_id": "d0107862bc34",
+  "project_name": "Test",
+  "version": "1.0.0",
+  "status": "draft",
+  "vision": "Build a build a test",
+  "requirements": [],
+  "architecture": "",
+  "folder_structure": "",
+  "coding_standards": "",
+  "tech_stack": {
+    "framework": "",
+    "language": "",
+    "styling": "",
+    "deployment": "",
+    "database": "",
+    "testing": "",
+    "ci_cd": "",
+    "additional": []
+  },
+  "constraints": [],
+  "milestones": [],
+  "acceptance_criteria": [],
+  "human_decisions": [],
+  "created_at": "2026-07-22T17:53:59.355014+00:00",
+  "updated_at": "2026-07-22T17:53:59.355023+00:00"
+}

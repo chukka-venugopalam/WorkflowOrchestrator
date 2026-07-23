@@ -206,7 +206,7 @@ Retry configuration:
 - vscode:
     action: open_project   # open_project, open_file
     project: /path/to/project
-```
+p```
 
 #### `wait`
 ```yaml

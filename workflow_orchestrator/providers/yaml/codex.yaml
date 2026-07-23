@@ -1,0 +1,34 @@
+# Codex CLI Provider Configuration
+name: "Codex CLI (OpenAI)"
+id: "openai.codex"
+transport: "cli"
+priority: 4
+quality: 85
+cost: 3  # 1-10 scale
+timeouts:
+  connect: 15
+  read: 120
+  write: 30
+retry:
+  max_retries: 2
+  backoff_base: 2.0
+  backoff_max: 30.0
+authentication:
+  type: api_key
+  env_var: "OPENAI_API_KEY"
+  location: "env"
+capabilities:
+  - code_generation
+  - code_editing
+  - terminal_operations
+  - file_operations
+limits:
+  max_tokens: 64000
+  max_concurrent: 2
+  rate_limit: 100
+  rate_limit_period: "minute"
+workspace:
+  default_model: "codex-cli"
+environment:
+  required_python: "3.9"
+  required_memory_mb: 512

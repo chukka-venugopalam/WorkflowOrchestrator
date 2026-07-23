@@ -1,0 +1,30 @@
+# Claude Code Agent Configuration
+name: "Claude Code"
+id: "claude_code"
+provider_id: "anthropic.claude"
+transport: "cli"
+priority: 1
+capabilities:
+  - code_generation
+  - code_editing
+  - code_review
+  - file_operations
+  - terminal_operations
+  - git_operations
+  - analysis
+  - planning
+  - documentation
+authentication:
+  type: api_key
+  env_var: "ANTHROPIC_API_KEY"
+limits:
+  max_tokens: 200000
+  max_concurrent: 1
+environment:
+  required_python: "3.9"
+  required_memory_mb: 1024
+features:
+  terminal: true
+  file_editing: true
+  sandboxed_execution: true
+  multi_step_planning: true

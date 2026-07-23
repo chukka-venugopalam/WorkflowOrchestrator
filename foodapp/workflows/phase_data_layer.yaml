@@ -1,0 +1,74 @@
+name: Data Layer - Phase
+description: 'Implementation phase: Data Layer'
+tags:
+- data_layer
+- builder
+steps:
+- name: Data Layer Setup
+  plugin: agent
+  config:
+    task_id: task_data_layer_setup
+    goal: Set up and prepare for Data Layer
+    capabilities:
+    - reasoning.planning
+    - tool.filesystem
+    expected_outputs:
+    - data_layer_setup_complete
+  on_failure: retry
+  retry:
+    max_retries: 1
+    delay: 1.0
+- name: Database Schema
+  plugin: agent
+  config:
+    task_id: task_data_layer_database_schema
+    goal: 'Deliver: Schema designed, Migrations created, Seeds implemented'
+    capabilities:
+    - codegen.implementation
+    - reasoning.problem-solving
+    expected_outputs:
+    - Schema designed
+    - Migrations created
+    - Seeds implemented
+    depends_on:
+    - task_data_layer_setup
+  on_failure: retry
+  retry:
+    max_retries: 2
+    delay: 2.0
+- name: Data Access
+  plugin: agent
+  config:
+    task_id: task_data_layer_data_access
+    goal: 'Deliver: Repository layer, Query optimization, Caching layer'
+    capabilities:
+    - codegen.implementation
+    - reasoning.problem-solving
+    expected_outputs:
+    - Repository layer
+    - Query optimization
+    - Caching layer
+    depends_on:
+    - task_data_layer_setup
+    - task_data_layer_database_schema
+  on_failure: retry
+  retry:
+    max_retries: 2
+    delay: 2.0
+- name: Verify Data Layer
+  plugin: agent
+  config:
+    task_id: task_data_layer_verify
+    goal: Verify all deliverables for Data Layer
+    capabilities:
+    - verify.testing
+    - verify.lint
+    - verify.typecheck
+    expected_outputs:
+    - data_layer_verification_report
+    depends_on:
+    - task_data_layer_data_access
+  on_failure: retry
+  retry:
+    max_retries: 2
+    delay: 3.0

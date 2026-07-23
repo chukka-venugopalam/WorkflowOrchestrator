@@ -1,0 +1,39 @@
+# Claude Provider Configuration
+name: "Claude (Anthropic)"
+id: "anthropic.claude"
+transport: "rest_api"
+priority: 1
+quality: 95
+cost: 5  # 1-10 scale
+timeouts:
+  connect: 30
+  read: 120
+  write: 60
+retry:
+  max_retries: 3
+  backoff_base: 2.0
+  backoff_max: 60.0
+authentication:
+  type: api_key
+  env_var: "ANTHROPIC_API_KEY"
+  location: "header"
+  header_name: "x-api-key"
+capabilities:
+  - text_generation
+  - code_generation
+  - code_review
+  - analysis
+  - planning
+  - reasoning
+  - explanation
+  - documentation
+limits:
+  max_tokens: 200000
+  max_concurrent: 5
+  rate_limit: 1000
+  rate_limit_period: "minute"
+workspace:
+  default_model: "claude-sonnet-4-20250514"
+environment:
+  required_python: "3.9"
+  required_memory_mb: 512

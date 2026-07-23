@@ -1,0 +1,73 @@
+name: Core Features - Phase
+description: 'Implementation phase: Core Features'
+tags:
+- core_features
+- builder
+steps:
+- name: Core Features Setup
+  plugin: agent
+  config:
+    task_id: task_core_features_setup
+    goal: Set up and prepare for Core Features
+    capabilities:
+    - reasoning.planning
+    - tool.filesystem
+    expected_outputs:
+    - core_features_setup_complete
+  on_failure: retry
+  retry:
+    max_retries: 1
+    delay: 1.0
+- name: Core Services
+  plugin: agent
+  config:
+    task_id: task_core_features_core_services
+    goal: 'Deliver: Business logic layer, Service interfaces, Error handling'
+    capabilities:
+    - codegen.implementation
+    - reasoning.problem-solving
+    expected_outputs:
+    - Business logic layer
+    - Service interfaces
+    - Error handling
+    depends_on:
+    - task_core_features_setup
+  on_failure: retry
+  retry:
+    max_retries: 2
+    delay: 2.0
+- name: Feature Completion
+  plugin: agent
+  config:
+    task_id: task_core_features_feature_completion
+    goal: 'Deliver: All core features implemented, Feature tests passing'
+    capabilities:
+    - codegen.implementation
+    - reasoning.problem-solving
+    expected_outputs:
+    - All core features implemented
+    - Feature tests passing
+    depends_on:
+    - task_core_features_setup
+    - task_core_features_core_services
+  on_failure: retry
+  retry:
+    max_retries: 2
+    delay: 2.0
+- name: Verify Core Features
+  plugin: agent
+  config:
+    task_id: task_core_features_verify
+    goal: Verify all deliverables for Core Features
+    capabilities:
+    - verify.testing
+    - verify.lint
+    - verify.typecheck
+    expected_outputs:
+    - core_features_verification_report
+    depends_on:
+    - task_core_features_feature_completion
+  on_failure: retry
+  retry:
+    max_retries: 2
+    delay: 3.0

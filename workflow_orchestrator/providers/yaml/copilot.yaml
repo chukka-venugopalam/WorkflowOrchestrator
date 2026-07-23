@@ -1,0 +1,35 @@
+# GitHub Copilot Provider Configuration
+name: "GitHub Copilot"
+id: "github.copilot"
+transport: "cli"
+priority: 6
+quality: 75
+cost: 2  # 1-10 scale
+timeouts:
+  connect: 10
+  read: 60
+  write: 30
+retry:
+  max_retries: 2
+  backoff_base: 2.0
+  backoff_max: 30.0
+authentication:
+  type: oauth
+  env_var: "GITHUB_TOKEN"
+  location: "header"
+  header_name: "Authorization"
+  header_prefix: "Bearer "
+capabilities:
+  - code_generation
+  - code_completion
+  - code_review
+limits:
+  max_tokens: 32000
+  max_concurrent: 1
+  rate_limit: 50
+  rate_limit_period: "minute"
+workspace:
+  default_model: "copilot-gpt-4"
+environment:
+  required_python: "3.8"
+  required_memory_mb: 256

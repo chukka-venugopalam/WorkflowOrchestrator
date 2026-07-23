@@ -1,0 +1,150 @@
+{
+  "project_id": "3e5cab1f5edd",
+  "project_name": "Test",
+  "project_type": "unknown",
+  "status": "completed",
+  "current_phase": "completed",
+  "phases": {
+    "classifying": {
+      "phase": "classifying",
+      "status": "completed",
+      "started_at": "2026-07-22T17:53:59.403213+00:00",
+      "completed_at": "2026-07-22T17:53:59.407525+00:00",
+      "completed_tasks": [],
+      "failed_tasks": [],
+      "artifacts": [],
+      "metadata": {}
+    },
+    "requirements": {
+      "phase": "requirements",
+      "status": "completed",
+      "started_at": "2026-07-22T17:53:59.407525+00:00",
+      "completed_at": "2026-07-22T17:53:59.408250+00:00",
+      "completed_tasks": [],
+      "failed_tasks": [],
+      "artifacts": [],
+      "metadata": {}
+    },
+    "architecture": {
+      "phase": "architecture",
+      "status": "completed",
+      "started_at": "2026-07-22T17:53:59.408250+00:00",
+      "completed_at": "2026-07-22T17:53:59.408779+00:00",
+      "completed_tasks": [],
+      "failed_tasks": [],
+      "artifacts": [],
+      "metadata": {}
+    },
+    "planning": {
+      "phase": "planning",
+      "status": "completed",
+      "started_at": "2026-07-22T17:53:59.408779+00:00",
+      "completed_at": "2026-07-22T17:53:59.409383+00:00",
+      "completed_tasks": [],
+      "failed_tasks": [],
+      "artifacts": [],
+      "metadata": {}
+    },
+    "task_creation": {
+      "phase": "task_creation",
+      "status": "completed",
+      "started_at": "2026-07-22T17:53:59.409383+00:00",
+      "completed_at": "2026-07-22T17:53:59.410044+00:00",
+      "completed_tasks": [],
+      "failed_tasks": [],
+      "artifacts": [],
+      "metadata": {}
+    },
+    "workflow_generation": {
+      "phase": "workflow_generation",
+      "status": "completed",
+      "started_at": "2026-07-22T17:53:59.410044+00:00",
+      "completed_at": "2026-07-22T17:53:59.430580+00:00",
+      "completed_tasks": [],
+      "failed_tasks": [],
+      "artifacts": [],
+      "metadata": {}
+    },
+    "provider_assignment": {
+      "phase": "provider_assignment",
+      "status": "completed",
+      "started_at": "2026-07-22T17:53:59.430580+00:00",
+      "completed_at": "2026-07-22T17:53:59.431423+00:00",
+      "completed_tasks": [],
+      "failed_tasks": [],
+      "artifacts": [],
+      "metadata": {}
+    },
+    "execution_planning": {
+      "phase": "execution_planning",
+      "status": "completed",
+      "started_at": "2026-07-22T17:53:59.431423+00:00",
+      "completed_at": "2026-07-22T17:53:59.432410+00:00",
+      "completed_tasks": [],
+      "failed_tasks": [],
+      "artifacts": [],
+      "metadata": {}
+    },
+    "executing": {
+      "phase": "executing",
+      "status": "completed",
+      "started_at": "2026-07-22T17:53:59.432410+00:00",
+      "completed_at": "2026-07-22T17:53:59.433039+00:00",
+      "completed_tasks": [],
+      "failed_tasks": [],
+      "artifacts": [],
+      "metadata": {}
+    },
+    "verifying": {
+      "phase": "verifying",
+      "status": "completed",
+      "started_at": "2026-07-22T17:53:59.433039+00:00",
+      "completed_at": "2026-07-22T17:53:59.434337+00:00",
+      "completed_tasks": [],
+      "failed_tasks": [],
+      "artifacts": [],
+      "metadata": {}
+    },
+    "documenting": {
+      "phase": "documenting",
+      "status": "pending",
+      "started_at": "",
+      "completed_at": "",
+      "completed_tasks": [],
+      "failed_tasks": [],
+      "artifacts": [],
+      "metadata": {}
+    },
+    "deploying": {
+      "phase": "deploying",
+      "status": "pending",
+      "started_at": "",
+      "completed_at": "",
+      "completed_tasks": [],
+      "failed_tasks": [],
+      "artifacts": [],
+      "metadata": {}
+    }
+  },
+  "completed_phases": [
+    "classifying",
+    "classifying",
+    "requirements",
+    "architecture",
+    "planning",
+    "task_creation",
+    "workflow_generation",
+    "provider_assignment",
+    "execution_planning",
+    "executing",
+    "verifying"
+  ],
+  "failed_phases": [],
+  "started_at": "2026-07-22T17:53:59.403213+00:00",
+  "updated_at": "2026-07-22T17:53:59.434337+00:00",
+  "completed_at": "2026-07-22T17:53:59.433706+00:00",
+  "metadata": {
+    "description": "Build a test",
+    "created_at": "2026-07-22T17:53:59.403213+00:00"
+  }
+}
