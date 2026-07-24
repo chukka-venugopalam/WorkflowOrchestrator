@@ -1,0 +1,908 @@
+{
+  "checkpoint_id": "8138f7b35756",
+  "timestamp": "2026-07-23T16:26:37.621445+00:00",
+  "checkpoint_type": "phase",
+  "project_state": {
+    "project_id": "49474ee81ca6",
+    "project_name": "Test",
+    "project_type": "unknown",
+    "status": "initializing",
+    "current_phase": "task_creation",
+    "phases": {
+      "classifying": {
+        "phase": "classifying",
+        "status": "completed",
+        "started_at": "2026-07-23T16:26:37.575914+00:00",
+        "completed_at": "2026-07-23T16:26:37.617884+00:00",
+        "completed_tasks": [],
+        "failed_tasks": [],
+        "artifacts": []
+      },
+      "requirements": {
+        "phase": "requirements",
+        "status": "completed",
+        "started_at": "2026-07-23T16:26:37.617884+00:00",
+        "completed_at": "2026-07-23T16:26:37.618858+00:00",
+        "completed_tasks": [],
+        "failed_tasks": [],
+        "artifacts": []
+      },
+      "architecture": {
+        "phase": "architecture",
+        "status": "completed",
+        "started_at": "2026-07-23T16:26:37.618858+00:00",
+        "completed_at": "2026-07-23T16:26:37.619538+00:00",
+        "completed_tasks": [],
+        "failed_tasks": [],
+        "artifacts": []
+      },
+      "planning": {
+        "phase": "planning",
+        "status": "completed",
+        "started_at": "2026-07-23T16:26:37.619538+00:00",
+        "completed_at": "2026-07-23T16:26:37.620221+00:00",
+        "completed_tasks": [],
+        "failed_tasks": [],
+        "artifacts": []
+      },
+      "task_creation": {
+        "phase": "task_creation",
+        "status": "running",
+        "started_at": "2026-07-23T16:26:37.620221+00:00",
+        "completed_at": "",
+        "completed_tasks": [],
+        "failed_tasks": [],
+        "artifacts": []
+      },
+      "workflow_generation": {
+        "phase": "workflow_generation",
+        "status": "pending",
+        "started_at": "",
+        "completed_at": "",
+        "completed_tasks": [],
+        "failed_tasks": [],
+        "artifacts": []
+      },
+      "provider_assignment": {
+        "phase": "provider_assignment",
+        "status": "pending",
+        "started_at": "",
+        "completed_at": "",
+        "completed_tasks": [],
+        "failed_tasks": [],
+        "artifacts": []
+      },
+      "execution_planning": {
+        "phase": "execution_planning",
+        "status": "pending",
+        "started_at": "",
+        "completed_at": "",
+        "completed_tasks": [],
+        "failed_tasks": [],
+        "artifacts": []
+      },
+      "executing": {
+        "phase": "executing",
+        "status": "pending",
+        "started_at": "",
+        "completed_at": "",
+        "completed_tasks": [],
+        "failed_tasks": [],
+        "artifacts": []
+      },
+      "verifying": {
+        "phase": "verifying",
+        "status": "pending",
+        "started_at": "",
+        "completed_at": "",
+        "completed_tasks": [],
+        "failed_tasks": [],
+        "artifacts": []
+      },
+      "documenting": {
+        "phase": "documenting",
+        "status": "pending",
+        "started_at": "",
+        "completed_at": "",
+        "completed_tasks": [],
+        "failed_tasks": [],
+        "artifacts": []
+      },
+      "deploying": {
+        "phase": "deploying",
+        "status": "pending",
+        "started_at": "",
+        "completed_at": "",
+        "completed_tasks": [],
+        "failed_tasks": [],
+        "artifacts": []
+      }
+    },
+    "completed_phases": [
+      "classifying",
+      "classifying",
+      "requirements",
+      "architecture",
+      "planning"
+    ],
+    "failed_phases": [],
+    "started_at": "2026-07-23T16:26:37.575914+00:00",
+    "updated_at": "2026-07-23T16:26:37.620221+00:00",
+    "completed_at": "",
+    "metadata": {
+      "description": "Build a test",
+      "created_at": "2026-07-23T16:26:37.575914+00:00"
+    }
+  },
+  "task_graph": {
+    "graph_id": "ff4e52801a95",
+    "project_id": "49474ee81ca6",
+    "nodes": {
+      "task_foundation_setup": {
+        "task_id": "task_foundation_setup",
+        "name": "Foundation Setup",
+        "description": "Set up and prepare for Foundation",
+        "phase": "foundation",
+        "priority": "high",
+        "status": "pending",
+        "dependencies": [],
+        "capabilities_required": [
+          "reasoning.planning",
+          "tool.filesystem"
+        ],
+        "expected_outputs": [
+          "foundation_setup_complete"
+        ],
+        "acceptance_criteria": [
+          "Foundation setup verified"
+        ],
+        "retry_policy": {
+          "max_retries": 1,
+          "delay": 1.0
+        },
+        "metadata": {}
+      },
+      "task_foundation_project_initialized": {
+        "task_id": "task_foundation_project_initialized",
+        "name": "Project Initialized",
+        "description": "Deliver: Repository created, CI/CD configured, Development environment documented",
+        "phase": "foundation",
+        "priority": "high",
+        "status": "pending",
+        "dependencies": [
+          "task_foundation_setup"
+        ],
+        "capabilities_required": [
+          "codegen.implementation",
+          "reasoning.problem-solving"
+        ],
+        "expected_outputs": [
+          "Repository created",
+          "CI/CD configured",
+          "Development environment documented"
+        ],
+        "acceptance_criteria": [
+          "Milestone 'Project Initialized' verified complete"
+        ],
+        "retry_policy": {
+          "max_retries": 2,
+          "delay": 2.0
+        },
+        "metadata": {}
+      },
+      "task_foundation_core_architecture": {
+        "task_id": "task_foundation_core_architecture",
+        "name": "Core Architecture",
+        "description": "Deliver: Folder structure created, Dependency injection set up, Configuration system",
+        "phase": "foundation",
+        "priority": "medium",
+        "status": "pending",
+        "dependencies": [
+          "task_foundation_setup",
+          "task_foundation_project_initialized"
+        ],
+        "capabilities_required": [
+          "codegen.implementation",
+          "reasoning.problem-solving"
+        ],
+        "expected_outputs": [
+          "Folder structure created",
+          "Dependency injection set up",
+          "Configuration system"
+        ],
+        "acceptance_criteria": [
+          "Milestone 'Core Architecture' verified complete"
+        ],
+        "retry_policy": {
+          "max_retries": 2,
+          "delay": 2.0
+        },
+        "metadata": {}
+      },
+      "task_foundation_verify": {
+        "task_id": "task_foundation_verify",
+        "name": "Verify Foundation",
+        "description": "Verify all deliverables for Foundation",
+        "phase": "foundation",
+        "priority": "medium",
+        "status": "pending",
+        "dependencies": [
+          "task_foundation_core_architecture"
+        ],
+        "capabilities_required": [
+          "verify.testing",
+          "verify.lint",
+          "verify.typecheck"
+        ],
+        "expected_outputs": [
+          "foundation_verification_report"
+        ],
+        "acceptance_criteria": [
+          "Phase Foundation verification passed"
+        ],
+        "retry_policy": {
+          "max_retries": 2,
+          "delay": 3.0
+        },
+        "metadata": {}
+      },
+      "task_data_layer_setup": {
+        "task_id": "task_data_layer_setup",
+        "name": "Data Layer Setup",
+        "description": "Set up and prepare for Data Layer",
+        "phase": "data_layer",
+        "priority": "high",
+        "status": "pending",
+        "dependencies": [],
+        "capabilities_required": [
+          "reasoning.planning",
+          "tool.filesystem"
+        ],
+        "expected_outputs": [
+          "data_layer_setup_complete"
+        ],
+        "acceptance_criteria": [
+          "Data Layer setup verified"
+        ],
+        "retry_policy": {
+          "max_retries": 1,
+          "delay": 1.0
+        },
+        "metadata": {}
+      },
+      "task_data_layer_database_schema": {
+        "task_id": "task_data_layer_database_schema",
+        "name": "Database Schema",
+        "description": "Deliver: Schema designed, Migrations created, Seeds implemented",
+        "phase": "data_layer",
+        "priority": "high",
+        "status": "pending",
+        "dependencies": [
+          "task_data_layer_setup"
+        ],
+        "capabilities_required": [
+          "codegen.implementation",
+          "reasoning.problem-solving"
+        ],
+        "expected_outputs": [
+          "Schema designed",
+          "Migrations created",
+          "Seeds implemented"
+        ],
+        "acceptance_criteria": [
+          "Milestone 'Database Schema' verified complete"
+        ],
+        "retry_policy": {
+          "max_retries": 2,
+          "delay": 2.0
+        },
+        "metadata": {}
+      },
+      "task_data_layer_data_access": {
+        "task_id": "task_data_layer_data_access",
+        "name": "Data Access",
+        "description": "Deliver: Repository layer, Query optimization, Caching layer",
+        "phase": "data_layer",
+        "priority": "medium",
+        "status": "pending",
+        "dependencies": [
+          "task_data_layer_setup",
+          "task_data_layer_database_schema"
+        ],
+        "capabilities_required": [
+          "codegen.implementation",
+          "reasoning.problem-solving"
+        ],
+        "expected_outputs": [
+          "Repository layer",
+          "Query optimization",
+          "Caching layer"
+        ],
+        "acceptance_criteria": [
+          "Milestone 'Data Access' verified complete"
+        ],
+        "retry_policy": {
+          "max_retries": 2,
+          "delay": 2.0
+        },
+        "metadata": {}
+      },
+      "task_data_layer_verify": {
+        "task_id": "task_data_layer_verify",
+        "name": "Verify Data Layer",
+        "description": "Verify all deliverables for Data Layer",
+        "phase": "data_layer",
+        "priority": "medium",
+        "status": "pending",
+        "dependencies": [
+          "task_data_layer_data_access"
+        ],
+        "capabilities_required": [
+          "verify.testing",
+          "verify.lint",
+          "verify.typecheck"
+        ],
+        "expected_outputs": [
+          "data_layer_verification_report"
+        ],
+        "acceptance_criteria": [
+          "Phase Data Layer verification passed"
+        ],
+        "retry_policy": {
+          "max_retries": 2,
+          "delay": 3.0
+        },
+        "metadata": {}
+      },
+      "task_core_features_setup": {
+        "task_id": "task_core_features_setup",
+        "name": "Core Features Setup",
+        "description": "Set up and prepare for Core Features",
+        "phase": "core_features",
+        "priority": "high",
+        "status": "pending",
+        "dependencies": [],
+        "capabilities_required": [
+          "reasoning.planning",
+          "tool.filesystem"
+        ],
+        "expected_outputs": [
+          "core_features_setup_complete"
+        ],
+        "acceptance_criteria": [
+          "Core Features setup verified"
+        ],
+        "retry_policy": {
+          "max_retries": 1,
+          "delay": 1.0
+        },
+        "metadata": {}
+      },
+      "task_core_features_core_services": {
+        "task_id": "task_core_features_core_services",
+        "name": "Core Services",
+        "description": "Deliver: Business logic layer, Service interfaces, Error handling",
+        "phase": "core_features",
+        "priority": "high",
+        "status": "pending",
+        "dependencies": [
+          "task_core_features_setup"
+        ],
+        "capabilities_required": [
+          "codegen.implementation",
+          "reasoning.problem-solving"
+        ],
+        "expected_outputs": [
+          "Business logic layer",
+          "Service interfaces",
+          "Error handling"
+        ],
+        "acceptance_criteria": [
+          "Milestone 'Core Services' verified complete"
+        ],
+        "retry_policy": {
+          "max_retries": 2,
+          "delay": 2.0
+        },
+        "metadata": {}
+      },
+      "task_core_features_feature_completion": {
+        "task_id": "task_core_features_feature_completion",
+        "name": "Feature Completion",
+        "description": "Deliver: All core features implemented, Feature tests passing",
+        "phase": "core_features",
+        "priority": "medium",
+        "status": "pending",
+        "dependencies": [
+          "task_core_features_setup",
+          "task_core_features_core_services"
+        ],
+        "capabilities_required": [
+          "codegen.implementation",
+          "reasoning.problem-solving"
+        ],
+        "expected_outputs": [
+          "All core features implemented",
+          "Feature tests passing"
+        ],
+        "acceptance_criteria": [
+          "Milestone 'Feature Completion' verified complete"
+        ],
+        "retry_policy": {
+          "max_retries": 2,
+          "delay": 2.0
+        },
+        "metadata": {}
+      },
+      "task_core_features_verify": {
+        "task_id": "task_core_features_verify",
+        "name": "Verify Core Features",
+        "description": "Verify all deliverables for Core Features",
+        "phase": "core_features",
+        "priority": "medium",
+        "status": "pending",
+        "dependencies": [
+          "task_core_features_feature_completion"
+        ],
+        "capabilities_required": [
+          "verify.testing",
+          "verify.lint",
+          "verify.typecheck"
+        ],
+        "expected_outputs": [
+          "core_features_verification_report"
+        ],
+        "acceptance_criteria": [
+          "Phase Core Features verification passed"
+        ],
+        "retry_policy": {
+          "max_retries": 2,
+          "delay": 3.0
+        },
+        "metadata": {}
+      },
+      "task_api_&_integration_setup": {
+        "task_id": "task_api_&_integration_setup",
+        "name": "API & Integration Setup",
+        "description": "Set up and prepare for API & Integration",
+        "phase": "api_&_integration",
+        "priority": "high",
+        "status": "pending",
+        "dependencies": [],
+        "capabilities_required": [
+          "reasoning.planning",
+          "tool.filesystem"
+        ],
+        "expected_outputs": [
+          "api_&_integration_setup_complete"
+        ],
+        "acceptance_criteria": [
+          "API & Integration setup verified"
+        ],
+        "retry_policy": {
+          "max_retries": 1,
+          "delay": 1.0
+        },
+        "metadata": {}
+      },
+      "task_api_&_integration_api_layer": {
+        "task_id": "task_api_&_integration_api_layer",
+        "name": "API Layer",
+        "description": "Deliver: API endpoints, Request validation, Response formatting",
+        "phase": "api_&_integration",
+        "priority": "high",
+        "status": "pending",
+        "dependencies": [
+          "task_api_&_integration_setup"
+        ],
+        "capabilities_required": [
+          "codegen.implementation",
+          "reasoning.problem-solving"
+        ],
+        "expected_outputs": [
+          "API endpoints",
+          "Request validation",
+          "Response formatting"
+        ],
+        "acceptance_criteria": [
+          "Milestone 'API Layer' verified complete"
+        ],
+        "retry_policy": {
+          "max_retries": 2,
+          "delay": 2.0
+        },
+        "metadata": {}
+      },
+      "task_api_&_integration_external_integrations": {
+        "task_id": "task_api_&_integration_external_integrations",
+        "name": "External Integrations",
+        "description": "Deliver: Third-party integrations, Webhook handlers",
+        "phase": "api_&_integration",
+        "priority": "medium",
+        "status": "pending",
+        "dependencies": [
+          "task_api_&_integration_setup",
+          "task_api_&_integration_api_layer"
+        ],
+        "capabilities_required": [
+          "codegen.implementation",
+          "reasoning.problem-solving"
+        ],
+        "expected_outputs": [
+          "Third-party integrations",
+          "Webhook handlers"
+        ],
+        "acceptance_criteria": [
+          "Milestone 'External Integrations' verified complete"
+        ],
+        "retry_policy": {
+          "max_retries": 2,
+          "delay": 2.0
+        },
+        "metadata": {}
+      },
+      "task_api_&_integration_verify": {
+        "task_id": "task_api_&_integration_verify",
+        "name": "Verify API & Integration",
+        "description": "Verify all deliverables for API & Integration",
+        "phase": "api_&_integration",
+        "priority": "medium",
+        "status": "pending",
+        "dependencies": [
+          "task_api_&_integration_external_integrations"
+        ],
+        "capabilities_required": [
+          "verify.testing",
+          "verify.lint",
+          "verify.typecheck"
+        ],
+        "expected_outputs": [
+          "api_&_integration_verification_report"
+        ],
+        "acceptance_criteria": [
+          "Phase API & Integration verification passed"
+        ],
+        "retry_policy": {
+          "max_retries": 2,
+          "delay": 3.0
+        },
+        "metadata": {}
+      },
+      "task_testing_&_quality_setup": {
+        "task_id": "task_testing_&_quality_setup",
+        "name": "Testing & Quality Setup",
+        "description": "Set up and prepare for Testing & Quality",
+        "phase": "testing_&_quality",
+        "priority": "high",
+        "status": "pending",
+        "dependencies": [],
+        "capabilities_required": [
+          "reasoning.planning",
+          "tool.filesystem"
+        ],
+        "expected_outputs": [
+          "testing_&_quality_setup_complete"
+        ],
+        "acceptance_criteria": [
+          "Testing & Quality setup verified"
+        ],
+        "retry_policy": {
+          "max_retries": 1,
+          "delay": 1.0
+        },
+        "metadata": {}
+      },
+      "task_testing_&_quality_test_coverage": {
+        "task_id": "task_testing_&_quality_test_coverage",
+        "name": "Test Coverage",
+        "description": "Deliver: Unit tests, Integration tests, E2E tests",
+        "phase": "testing_&_quality",
+        "priority": "high",
+        "status": "pending",
+        "dependencies": [
+          "task_testing_&_quality_setup"
+        ],
+        "capabilities_required": [
+          "codegen.implementation",
+          "reasoning.problem-solving"
+        ],
+        "expected_outputs": [
+          "Unit tests",
+          "Integration tests",
+          "E2E tests"
+        ],
+        "acceptance_criteria": [
+          "Milestone 'Test Coverage' verified complete"
+        ],
+        "retry_policy": {
+          "max_retries": 2,
+          "delay": 2.0
+        },
+        "metadata": {}
+      },
+      "task_testing_&_quality_quality_gates": {
+        "task_id": "task_testing_&_quality_quality_gates",
+        "name": "Quality Gates",
+        "description": "Deliver: Linting configured, Type checking, Code review",
+        "phase": "testing_&_quality",
+        "priority": "medium",
+        "status": "pending",
+        "dependencies": [
+          "task_testing_&_quality_setup",
+          "task_testing_&_quality_test_coverage"
+        ],
+        "capabilities_required": [
+          "codegen.implementation",
+          "reasoning.problem-solving"
+        ],
+        "expected_outputs": [
+          "Linting configured",
+          "Type checking",
+          "Code review"
+        ],
+        "acceptance_criteria": [
+          "Milestone 'Quality Gates' verified complete"
+        ],
+        "retry_policy": {
+          "max_retries": 2,
+          "delay": 2.0
+        },
+        "metadata": {}
+      },
+      "task_testing_&_quality_verify": {
+        "task_id": "task_testing_&_quality_verify",
+        "name": "Verify Testing & Quality",
+        "description": "Verify all deliverables for Testing & Quality",
+        "phase": "testing_&_quality",
+        "priority": "medium",
+        "status": "pending",
+        "dependencies": [
+          "task_testing_&_quality_quality_gates"
+        ],
+        "capabilities_required": [
+          "verify.testing",
+          "verify.lint",
+          "verify.typecheck"
+        ],
+        "expected_outputs": [
+          "testing_&_quality_verification_report"
+        ],
+        "acceptance_criteria": [
+          "Phase Testing & Quality verification passed"
+        ],
+        "retry_policy": {
+          "max_retries": 2,
+          "delay": 3.0
+        },
+        "metadata": {}
+      },
+      "task_documentation_setup": {
+        "task_id": "task_documentation_setup",
+        "name": "Documentation Setup",
+        "description": "Set up and prepare for Documentation",
+        "phase": "documentation",
+        "priority": "high",
+        "status": "pending",
+        "dependencies": [],
+        "capabilities_required": [
+          "reasoning.planning",
+          "tool.filesystem"
+        ],
+        "expected_outputs": [
+          "documentation_setup_complete"
+        ],
+        "acceptance_criteria": [
+          "Documentation setup verified"
+        ],
+        "retry_policy": {
+          "max_retries": 1,
+          "delay": 1.0
+        },
+        "metadata": {}
+      },
+      "task_documentation_technical_docs": {
+        "task_id": "task_documentation_technical_docs",
+        "name": "Technical Docs",
+        "description": "Deliver: Architecture documentation, API reference, Setup guide",
+        "phase": "documentation",
+        "priority": "high",
+        "status": "pending",
+        "dependencies": [
+          "task_documentation_setup"
+        ],
+        "capabilities_required": [
+          "codegen.implementation",
+          "reasoning.problem-solving"
+        ],
+        "expected_outputs": [
+          "Architecture documentation",
+          "API reference",
+          "Setup guide"
+        ],
+        "acceptance_criteria": [
+          "Milestone 'Technical Docs' verified complete"
+        ],
+        "retry_policy": {
+          "max_retries": 2,
+          "delay": 2.0
+        },
+        "metadata": {}
+      },
+      "task_documentation_user_docs": {
+        "task_id": "task_documentation_user_docs",
+        "name": "User Docs",
+        "description": "Deliver: User manual, Deployment guide",
+        "phase": "documentation",
+        "priority": "medium",
+        "status": "pending",
+        "dependencies": [
+          "task_documentation_setup",
+          "task_documentation_technical_docs"
+        ],
+        "capabilities_required": [
+          "codegen.implementation",
+          "reasoning.problem-solving"
+        ],
+        "expected_outputs": [
+          "User manual",
+          "Deployment guide"
+        ],
+        "acceptance_criteria": [
+          "Milestone 'User Docs' verified complete"
+        ],
+        "retry_policy": {
+          "max_retries": 2,
+          "delay": 2.0
+        },
+        "metadata": {}
+      },
+      "task_documentation_verify": {
+        "task_id": "task_documentation_verify",
+        "name": "Verify Documentation",
+        "description": "Verify all deliverables for Documentation",
+        "phase": "documentation",
+        "priority": "medium",
+        "status": "pending",
+        "dependencies": [
+          "task_documentation_user_docs"
+        ],
+        "capabilities_required": [
+          "verify.testing",
+          "verify.lint",
+          "verify.typecheck"
+        ],
+        "expected_outputs": [
+          "documentation_verification_report"
+        ],
+        "acceptance_criteria": [
+          "Phase Documentation verification passed"
+        ],
+        "retry_policy": {
+          "max_retries": 2,
+          "delay": 3.0
+        },
+        "metadata": {}
+      },
+      "task_deployment_setup": {
+        "task_id": "task_deployment_setup",
+        "name": "Deployment Setup",
+        "description": "Set up and prepare for Deployment",
+        "phase": "deployment",
+        "priority": "high",
+        "status": "pending",
+        "dependencies": [],
+        "capabilities_required": [
+          "reasoning.planning",
+          "tool.filesystem"
+        ],
+        "expected_outputs": [
+          "deployment_setup_complete"
+        ],
+        "acceptance_criteria": [
+          "Deployment setup verified"
+        ],
+        "retry_policy": {
+          "max_retries": 1,
+          "delay": 1.0
+        },
+        "metadata": {}
+      },
+      "task_deployment_deployment_setup": {
+        "task_id": "task_deployment_deployment_setup",
+        "name": "Deployment Setup",
+        "description": "Deliver: Deployment scripts, Environment config, Monitoring setup",
+        "phase": "deployment",
+        "priority": "high",
+        "status": "pending",
+        "dependencies": [
+          "task_deployment_setup"
+        ],
+        "capabilities_required": [
+          "codegen.implementation",
+          "reasoning.problem-solving"
+        ],
+        "expected_outputs": [
+          "Deployment scripts",
+          "Environment config",
+          "Monitoring setup"
+        ],
+        "acceptance_criteria": [
+          "Milestone 'Deployment Setup' verified complete"
+        ],
+        "retry_policy": {
+          "max_retries": 2,
+          "delay": 2.0
+        },
+        "metadata": {}
+      },
+      "task_deployment_release": {
+        "task_id": "task_deployment_release",
+        "name": "Release",
+        "description": "Deliver: Production deployment, Release notes",
+        "phase": "deployment",
+        "priority": "medium",
+        "status": "pending",
+        "dependencies": [
+          "task_deployment_setup",
+          "task_deployment_deployment_setup"
+        ],
+        "capabilities_required": [
+          "codegen.implementation",
+          "reasoning.problem-solving"
+        ],
+        "expected_outputs": [
+          "Production deployment",
+          "Release notes"
+        ],
+        "acceptance_criteria": [
+          "Milestone 'Release' verified complete"
+        ],
+        "retry_policy": {
+          "max_retries": 2,
+          "delay": 2.0
+        },
+        "metadata": {}
+      },
+      "task_deployment_verify": {
+        "task_id": "task_deployment_verify",
+        "name": "Verify Deployment",
+        "description": "Verify all deliverables for Deployment",
+        "phase": "deployment",
+        "priority": "medium",
+        "status": "pending",
+        "dependencies": [
+          "task_deployment_release"
+        ],
+        "capabilities_required": [
+          "verify.testing",
+          "verify.lint",
+          "verify.typecheck"
+        ],
+        "expected_outputs": [
+          "deployment_verification_report"
+        ],
+        "acceptance_criteria": [
+          "Phase Deployment verification passed"
+        ],
+        "retry_policy": {
+          "max_retries": 2,
+          "delay": 3.0
+        },
+        "metadata": {}
+      }
+    },
+    "phases": [
+      "foundation",
+      "data_layer",
+      "core_features",
+      "api_&_integration",
+      "testing_&_quality",
+      "documentation",
+      "deployment"
+    ]
+  },
+  "phase": "task_creation",
+  "task_id": "",
+  "description": "Checkpoint at phase: task_creation",
+  "artifact_hashes": {}
+}

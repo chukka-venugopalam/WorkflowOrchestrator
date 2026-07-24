@@ -60,6 +60,7 @@ class CliCommandTransport(CliTransport):
         try:
             proc = await asyncio.create_subprocess_shell(
                 command if self._shell else command,
+                stdin=asyncio.subprocess.DEVNULL,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
                 cwd=self._cwd,
@@ -133,9 +134,12 @@ class CliCommandTransport(CliTransport):
         Returns:
             True if basic shell access works.
         """
+        import sys
         try:
+            cmd = f'"{sys.executable}" -c "print(\'ok\')"'
             proc = await asyncio.create_subprocess_shell(
-                "echo 'health check'",
+                cmd,
+                stdin=asyncio.subprocess.DEVNULL,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )

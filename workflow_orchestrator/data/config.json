@@ -1,9 +1,13 @@
 {
-  "brave_executable_path": "",
   "vscode_executable_path": "code",
-  "default_project_directory": "",
-  "github_repository_url": "",
-  "render_dashboard_url": "",
-  "vercel_dashboard_url": "",
-  "freebuff_command": ""
+  "active_profile": "default",
+  "log_level": "INFO",
+  "log_to_file": true,
+  "log_to_console": true,
+  "default_timeout": 60,
+  "retry_delay": 1.0,
+  "workspace.root": "C:\\Users\\venugopal\\OneDrive\\Documents\\Projects\\python tool",
+  "editor.default": "vscode",
+  "browser.default": "chrome",
+  "deployment.default": "vercel"
 }

@@ -196,6 +196,9 @@ class Kernel:
         """
         from workflow_orchestrator.plugins.registry import PluginRegistry
 
+        if not self._registry.has_service("plugin_registry"):
+            logger.warning("No plugin_registry registered in kernel")
+            return 0
         registry = self._registry.get_typed("plugin_registry", PluginRegistry)
         count = registry.discover(package)
         logger.info("Discovered %d plugins", count)

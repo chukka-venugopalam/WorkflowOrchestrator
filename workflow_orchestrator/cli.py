@@ -88,61 +88,26 @@ def doctor() -> None:
     """Run complete system diagnostics.
 
     Checks providers, transports, agents, authentication,
-    workspace, CLI tools, environment, and capabilities.
+    workspace, CLI tools, environment, dependencies, and overall health.
     """
+    from workflow_orchestrator.orchestrator.orchestrator import Orchestrator
     console.print("[bold cyan]═══ Workflow Orchestrator Diagnostics ═══[/]\n")
 
-    kernel = _get_kernel()
-    health_monitor = kernel.get_service("health_monitor")
-    provider_detector = kernel.get_service("provider_detector")
-    cli_manager = kernel.get_service("cli_manager")
-    environment_detector = kernel.get_service("environment_detector")
-    tool_detector = kernel.get_service("tool_detector")
-    workspace_detector = kernel.get_service("workspace_detector")
-    browser_manager = kernel.get_service("browser_manager")
-    version_manager = kernel.get_service("version_manager")
+    orch = Orchestrator.get_instance()
+    rep = orch.run_doctor()
 
-    all_healthy = True
+    table = Table(title="Workflow Doctor Diagnostics Report", box=box.ROUNDED)
+    table.add_column("Category", style="cyan")
+    table.add_column("Check", style="bold white")
+    table.add_column("Status", justify="center")
+    table.add_column("Message", style="dim white")
 
-    # --- Providers ---
-    console.print("[bold]─ Providers ─[/]")
-    detected_providers = provider_detector.detect_all()
-    if detected_providers:
-        for p in detected_providers:
-            name = p.name or p.provider_id
-            status_text = "[green]✓[/]"
-            console.print(f"  {status_text} {name}")
-    else:
-        console.print("  [yellow]No providers detected[/]")
-        all_healthy = False
+    for item in rep.items:
+        st = f"[green]{item.status}[/]" if item.status == "OK" else (f"[yellow]{item.status}[/]" if item.status == "WARNING" else f"[red]{item.status}[/]")
+        table.add_row(item.category, item.name, st, item.message)
 
-    # --- CLI Tools ---
-    console.print("\n[bold]─ CLI Tools ─[/]")
-    tools = cli_manager.detect_all()
-    if tools:
-        for tool in tools:
-            if tool.available:
-                console.print(f"  [green]✓[/] {tool.name} [dim]{tool.version or ''}[/]")
-            else:
-                console.print(f"  [red]✗[/] {tool.name} [dim]not found[/]")
-                if tool.name in ("python", "node", "git"):
-                    all_healthy = False
-    else:
-        console.print("  [yellow]No CLI tools checked[/]")
-
-    # --- Browsers ---
-    console.print("\n[bold]─ Browsers ─[/]")
-    browsers = browser_manager.detect_all()
-    if browsers:
-        for b in browsers:
-            console.print(f"  [green]✓[/] {b.name} [dim]{b.version or ''}[/]")
-    else:
-        console.print("  [yellow]No browsers detected[/]")
-
-    # --- Environment ---
-    console.print("\n[bold]─ Environment ─[/]")
-    env_info = environment_detector.detect()
-    console.print(f"  OS: [cyan]{env_info.get('os', 'Unknown')}[/]")
+    console.print(table)
+    console.print(f"\n[bold]Summary:[/] Passed: [green]{rep.passed_count}[/], Warnings: [yellow]{rep.warning_count}[/], Failed: [red]{rep.failed_count}[/]\n")
     console.print(f"  Python: [cyan]{env_info.get('python_version', 'Unknown')}[/]")
     console.print(f"  Architecture: [cyan]{env_info.get('architecture', 'Unknown')}[/]")
     if env_info.get("has_gpu"):

@@ -4,5 +4,5 @@
 
 | Date | Decision | Rationale |
 |------|----------|----------|
-| 2026-07-22 | Project initiated | Automated project generation |
-| 2026-07-22 | Architecture selected | Based on project requirements |
+| 2026-07-23 | Project initiated | Automated project generation |
+| 2026-07-23 | Architecture selected | Based on project requirements |

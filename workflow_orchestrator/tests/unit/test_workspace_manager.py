@@ -125,7 +125,7 @@ class TestWorkspaceManager:
 
     def test_base_path(self) -> None:
         """Test the base_path property."""
-        assert self.manager.base_path == self.temp_dir / "workspaces"
+        assert Path(self.manager.base_path).resolve() == (self.temp_dir / "workspaces").resolve()
 
     def test_double_teardown(self) -> None:
         """Test that double teardown is safe."""

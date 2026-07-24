@@ -412,7 +412,7 @@ class CapabilityRegistry:
             trace.append(f"  Included '{manifest.provider_id}' (quality={manifest.quality.value}, cost={manifest.cost_tier.value})")
 
         # Step 3: Sort by quality descending, then cost tier ascending
-        quality_rank = {q.value: i for i, q in enumerate(reversed(list(QualityLevel)))}
+        quality_rank = {q.value: i for i, q in enumerate(QualityLevel)}
         cost_rank = {c.value: i for i, c in enumerate(CostTier)}
 
         def _sort_key(m: CapabilityManifest) -> tuple:

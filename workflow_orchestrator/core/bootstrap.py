@@ -282,13 +282,14 @@ class BootstrapSequence:
         )
 
         agent_registry = self._registry.get("agent_registry")
+        event_bus = self._registry.get("event_bus") if self._registry.has_service("event_bus") else None
 
         # Register default agents into the AgentRegistry
         for agent_cls in [ClaudeCodeAgent, CursorAgent, CodexCLIAgent, GitHubCopilotAgent]:
             try:
                 agent = agent_cls()
                 # Wire event bus for agent-level events
-                if hasattr(agent, "set_event_bus"):
+                if hasattr(agent, "set_event_bus") and event_bus:
                     agent.set_event_bus(event_bus)
                 agent_registry.register(agent)
                 logger.debug("Registered agent: %s", agent.agent_id)
@@ -302,6 +303,7 @@ class BootstrapSequence:
             RestApiTransport,
             CliCommandTransport,
             BrowserAutomationTransport,
+            DesktopAutomationTransport,
             McpClientTransport,
             SshCommandTransport,
         )
@@ -587,7 +589,7 @@ class BootstrapSequence:
         )
 
         # Provider Configuration
-        provider_configuration = ProviderConfiguration(profiles_dir=self._registry.get("config_manager").profiles_dir)
+        provider_configuration = ProviderConfiguration()
         self._registry.register_instance(
             "provider_configuration",
             provider_configuration,
@@ -595,7 +597,7 @@ class BootstrapSequence:
         )
 
         # Credential Manager
-        credential_manager = CredentialManager(event_bus=event_bus)
+        credential_manager = CredentialManager()
         self._registry.register_instance(
             "credential_manager",
             credential_manager,
@@ -603,10 +605,7 @@ class BootstrapSequence:
         )
 
         # Transport Factory
-        transport_factory = TransportFactory(
-            transport_runtime=self._registry.get("transport_runtime"),
-            event_bus=event_bus,
-        )
+        transport_factory = TransportFactory(event_bus=event_bus)
         self._registry.register_instance(
             "transport_factory",
             transport_factory,

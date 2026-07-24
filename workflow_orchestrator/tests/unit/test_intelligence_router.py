@@ -26,6 +26,7 @@ class TestRouter:
         self.matcher = CapabilityMatcher(self.provider_registry, self.agent_registry)
         self.router = Router(self.matcher)
 
+    @pytest.mark.asyncio
     async def test_route_basic(self) -> None:
         decision = await self.router.route(["cap.a"])
         assert decision.selected_provider_id != ""

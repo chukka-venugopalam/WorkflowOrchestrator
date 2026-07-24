@@ -15,7 +15,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Set
 
-from workflow_orchestrator.core.event_bus import EventBus
+from workflow_orchestrator.core.event_bus import Event, EventBus
 
 logger = logging.getLogger(__name__)
 
@@ -328,7 +328,13 @@ class HealthMonitor:
             data: Event payload.
         """
         if self._event_bus:
-            self._event_bus.publish(event, data)
+            try:
+                self._event_bus.publish(event, data)
+            except Exception:
+                try:
+                    self._event_bus.publish(Event(type=event, data=data))
+                except Exception:
+                    pass
 
     def start_monitoring(self) -> None:
         """Start periodic health monitoring."""

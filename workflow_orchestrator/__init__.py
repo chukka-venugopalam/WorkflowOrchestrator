@@ -10,3 +10,7 @@ __version__ = "3.0.0"
 __architecture_version__ = "3.0.0"
 __author__ = "Workflow Orchestrator Contributors"
 __license__ = "MIT"
+
+from workflow_orchestrator.orchestrator.orchestrator import Orchestrator
+
+__all__ = ["Orchestrator", "__version__"]

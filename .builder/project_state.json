@@ -1,15 +1,15 @@
 {
-  "project_id": "3e5cab1f5edd",
-  "project_name": "Test",
-  "project_type": "unknown",
+  "project_id": "594ba75ee07c",
+  "project_name": "tourism_ai",
+  "project_type": "ai",
   "status": "completed",
   "current_phase": "completed",
   "phases": {
     "classifying": {
       "phase": "classifying",
       "status": "completed",
-      "started_at": "2026-07-22T17:53:59.403213+00:00",
-      "completed_at": "2026-07-22T17:53:59.407525+00:00",
+      "started_at": "2026-07-23T16:27:23.720510+00:00",
+      "completed_at": "2026-07-23T16:27:23.741641+00:00",
       "completed_tasks": [],
       "failed_tasks": [],
       "artifacts": [],
@@ -18,8 +18,8 @@
     "requirements": {
       "phase": "requirements",
       "status": "completed",
-      "started_at": "2026-07-22T17:53:59.407525+00:00",
-      "completed_at": "2026-07-22T17:53:59.408250+00:00",
+      "started_at": "2026-07-23T16:27:23.741641+00:00",
+      "completed_at": "2026-07-23T16:27:23.744800+00:00",
       "completed_tasks": [],
       "failed_tasks": [],
       "artifacts": [],
@@ -28,8 +28,8 @@
     "architecture": {
       "phase": "architecture",
       "status": "completed",
-      "started_at": "2026-07-22T17:53:59.408250+00:00",
-      "completed_at": "2026-07-22T17:53:59.408779+00:00",
+      "started_at": "2026-07-23T16:27:23.744800+00:00",
+      "completed_at": "2026-07-23T16:27:23.745743+00:00",
       "completed_tasks": [],
       "failed_tasks": [],
       "artifacts": [],
@@ -38,8 +38,8 @@
     "planning": {
       "phase": "planning",
       "status": "completed",
-      "started_at": "2026-07-22T17:53:59.408779+00:00",
-      "completed_at": "2026-07-22T17:53:59.409383+00:00",
+      "started_at": "2026-07-23T16:27:23.745743+00:00",
+      "completed_at": "2026-07-23T16:27:23.746643+00:00",
       "completed_tasks": [],
       "failed_tasks": [],
       "artifacts": [],
@@ -48,8 +48,8 @@
     "task_creation": {
       "phase": "task_creation",
       "status": "completed",
-      "started_at": "2026-07-22T17:53:59.409383+00:00",
-      "completed_at": "2026-07-22T17:53:59.410044+00:00",
+      "started_at": "2026-07-23T16:27:23.746643+00:00",
+      "completed_at": "2026-07-23T16:27:23.751207+00:00",
       "completed_tasks": [],
       "failed_tasks": [],
       "artifacts": [],
@@ -58,8 +58,8 @@
     "workflow_generation": {
       "phase": "workflow_generation",
       "status": "completed",
-      "started_at": "2026-07-22T17:53:59.410044+00:00",
-      "completed_at": "2026-07-22T17:53:59.430580+00:00",
+      "started_at": "2026-07-23T16:27:23.751207+00:00",
+      "completed_at": "2026-07-23T16:27:23.904487+00:00",
       "completed_tasks": [],
       "failed_tasks": [],
       "artifacts": [],
@@ -68,8 +68,8 @@
     "provider_assignment": {
       "phase": "provider_assignment",
       "status": "completed",
-      "started_at": "2026-07-22T17:53:59.430580+00:00",
-      "completed_at": "2026-07-22T17:53:59.431423+00:00",
+      "started_at": "2026-07-23T16:27:23.904487+00:00",
+      "completed_at": "2026-07-23T16:27:23.906916+00:00",
       "completed_tasks": [],
       "failed_tasks": [],
       "artifacts": [],
@@ -78,8 +78,8 @@
     "execution_planning": {
       "phase": "execution_planning",
       "status": "completed",
-      "started_at": "2026-07-22T17:53:59.431423+00:00",
-      "completed_at": "2026-07-22T17:53:59.432410+00:00",
+      "started_at": "2026-07-23T16:27:23.906916+00:00",
+      "completed_at": "2026-07-23T16:27:23.909074+00:00",
       "completed_tasks": [],
       "failed_tasks": [],
       "artifacts": [],
@@ -88,8 +88,8 @@
     "executing": {
       "phase": "executing",
       "status": "completed",
-      "started_at": "2026-07-22T17:53:59.432410+00:00",
-      "completed_at": "2026-07-22T17:53:59.433039+00:00",
+      "started_at": "2026-07-23T16:27:23.909074+00:00",
+      "completed_at": "2026-07-23T16:27:23.910990+00:00",
       "completed_tasks": [],
       "failed_tasks": [],
       "artifacts": [],
@@ -98,8 +98,8 @@
     "verifying": {
       "phase": "verifying",
       "status": "completed",
-      "started_at": "2026-07-22T17:53:59.433039+00:00",
-      "completed_at": "2026-07-22T17:53:59.434337+00:00",
+      "started_at": "2026-07-23T16:27:23.910990+00:00",
+      "completed_at": "2026-07-23T16:27:23.913061+00:00",
       "completed_tasks": [],
       "failed_tasks": [],
       "artifacts": [],
@@ -107,9 +107,9 @@
     },
     "documenting": {
       "phase": "documenting",
-      "status": "pending",
-      "started_at": "",
-      "completed_at": "",
+      "status": "completed",
+      "started_at": "2026-07-23T16:27:23.913061+00:00",
+      "completed_at": "2026-07-23T16:27:23.919938+00:00",
       "completed_tasks": [],
       "failed_tasks": [],
       "artifacts": [],
@@ -117,9 +117,9 @@
     },
     "deploying": {
       "phase": "deploying",
-      "status": "pending",
-      "started_at": "",
-      "completed_at": "",
+      "status": "completed",
+      "started_at": "2026-07-23T16:27:23.919938+00:00",
+      "completed_at": "2026-07-23T16:27:23.923826+00:00",
       "completed_tasks": [],
       "failed_tasks": [],
       "artifacts": [],
@@ -137,14 +137,16 @@
     "provider_assignment",
     "execution_planning",
     "executing",
-    "verifying"
+    "verifying",
+    "documenting",
+    "deploying"
   ],
   "failed_phases": [],
-  "started_at": "2026-07-22T17:53:59.403213+00:00",
-  "updated_at": "2026-07-22T17:53:59.434337+00:00",
-  "completed_at": "2026-07-22T17:53:59.433706+00:00",
+  "started_at": "2026-07-23T16:27:23.720510+00:00",
+  "updated_at": "2026-07-23T16:27:23.923826+00:00",
+  "completed_at": "2026-07-23T16:27:23.922228+00:00",
   "metadata": {
-    "description": "Build a test",
-    "created_at": "2026-07-22T17:53:59.403213+00:00"
+    "description": "I want to build an AI tourism platform.",
+    "created_at": "2026-07-23T16:27:23.720510+00:00"
   }
 }

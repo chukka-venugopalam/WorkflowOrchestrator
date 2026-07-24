@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from workflow_orchestrator.core.event_bus import EventBus, Event, Subscription
 
 

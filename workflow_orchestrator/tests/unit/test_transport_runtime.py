@@ -125,8 +125,9 @@ class TestCliCommandTransport:
         """Test executing a successful CLI command."""
         from workflow_orchestrator.transports import CliCommandTransport
 
+        import sys
         transport = CliCommandTransport(shell=True)
-        request = TransportRequest(body="echo 'hello'", timeout_seconds=10)
+        request = TransportRequest(body=f'"{sys.executable}" -c "print(\'hello\')"', timeout_seconds=10)
 
         response = await transport.send(request)
         assert response.success is True
