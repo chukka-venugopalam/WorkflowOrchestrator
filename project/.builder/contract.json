@@ -1,6 +1,6 @@
 {
-  "contract_id": "1380a9924fe5",
-  "project_id": "b80a146014c4",
+  "contract_id": "3ed8a36cd0dd",
+  "project_id": "0e8f05f25711",
   "project_name": "Project",
   "version": "1.0.0",
   "status": "draft",
@@ -23,6 +23,6 @@
   "milestones": [],
   "acceptance_criteria": [],
   "human_decisions": [],
-  "created_at": "2026-07-23T16:27:08.958091+00:00",
-  "updated_at": "2026-07-23T16:27:08.958099+00:00"
+  "created_at": "2026-07-24T16:30:11.038550+00:00",
+  "updated_at": "2026-07-24T16:30:11.038559+00:00"
 }

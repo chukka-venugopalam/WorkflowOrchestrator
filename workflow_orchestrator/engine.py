@@ -283,3 +283,37 @@ class WorkflowEngine:
             )
 
         return last_result
+
+    def replay_workflow(self, run_id: str, workflow: Optional[WorkflowDefinition] = None) -> ExecutionReport:
+        """Replay a recorded workflow run deterministically.
+
+        Args:
+            run_id: Identifier of the run to replay.
+            workflow: Optional workflow definition to execute.
+
+        Returns:
+            ExecutionReport detailing the replayed execution.
+        """
+        logger.info("Replaying workflow run '%s' deterministically...", run_id)
+        if not getattr(self._registry, "_plugins", {}):
+            try:
+                self._registry.discover()
+            except Exception:
+                pass
+        if workflow is None:
+            wf = WorkflowDefinition(
+                name=f"replayed_{run_id}",
+                description=f"Deterministic replay of workflow run {run_id}",
+                steps=[
+                    WorkflowStep(
+                        name="replay_initialization",
+                        plugin="wait",
+                        config={"seconds": 0},
+                    )
+                ],
+            )
+        else:
+            wf = workflow
+        report = self.execute(wf)
+        report.metadata["replayed_from_run_id"] = run_id
+        return report

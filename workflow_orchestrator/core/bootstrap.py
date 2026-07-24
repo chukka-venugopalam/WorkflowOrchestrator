@@ -127,6 +127,18 @@ class BootstrapSequence:
             description="Plugin discovery and management",
         )
 
+        from workflow_orchestrator.core.plugin_engine import PluginEngine
+        from workflow_orchestrator.core.benchmark import BenchmarkRunner
+        from workflow_orchestrator.core.security import ApprovalGateEngine
+        from workflow_orchestrator.core.telemetry import TelemetryTracer
+        from workflow_orchestrator.core.version_matrix import VersionMatrix
+
+        self._registry.register_instance("plugin_engine", PluginEngine(), description="Dynamic plugin loader")
+        self._registry.register_instance("benchmark_runner", BenchmarkRunner(), description="Benchmark suite")
+        self._registry.register_instance("approval_gate", ApprovalGateEngine(), description="Security approval gate")
+        self._registry.register_instance("telemetry_tracer", TelemetryTracer(), description="Telemetry tracer")
+        self._registry.register_instance("version_matrix", VersionMatrix(), description="Version matrix engine")
+
     def _register_execution_services(self) -> None:
         """Register execution engine services."""
         from workflow_orchestrator.execution.step_executor import StepExecutor

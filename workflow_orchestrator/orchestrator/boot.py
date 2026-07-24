@@ -176,7 +176,7 @@ class BootSequence:
         """Step 3: Load Profiles."""
         loader = ProfileLoader(profiles_dir=Path.cwd() / "profiles")
         profiles = loader.list_profiles()
-        self.kernel.registry.register_instance("profile_loader", loader)
+        self.kernel.registry.register_instance("profile_loader", loader, overwrite=True)
         return f"Loaded {len(profiles)} profile(s): {', '.join(profiles)}"
 
     def _step_4_load_providers(self) -> str:
@@ -204,7 +204,7 @@ class BootSequence:
     def _step_7_load_workflows(self) -> str:
         """Step 7: Load Workflows."""
         loader = WorkflowLoader()
-        self.kernel.registry.register_instance("workflow_loader", loader)
+        self.kernel.registry.register_instance("workflow_loader", loader, overwrite=True)
         fmts = list(loader.supported_formats()) if callable(getattr(loader, "supported_formats", None)) else ["yaml", "json"]
         formats = ", ".join(fmts)
         return f"WorkflowLoader initialized (supported formats: {formats})"

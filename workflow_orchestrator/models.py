@@ -332,6 +332,7 @@ class ExecutionReport:
     logs: list[str] = field(default_factory=list)
     error: Optional[str] = None
     profile: str = "default"
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize to a JSON-compatible dictionary."""

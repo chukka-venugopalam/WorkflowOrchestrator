@@ -1,6 +1,6 @@
 {
-  "contract_id": "026f8ecc0aae",
-  "project_id": "594ba75ee07c",
+  "contract_id": "6c74ab0dbcb9",
+  "project_id": "c71d655bc02c",
   "project_name": "tourism_ai",
   "version": "1.0.0",
   "status": "draft",
@@ -23,6 +23,6 @@
   "milestones": [],
   "acceptance_criteria": [],
   "human_decisions": [],
-  "created_at": "2026-07-23T16:27:23.734246+00:00",
-  "updated_at": "2026-07-23T16:27:23.734265+00:00"
+  "created_at": "2026-07-24T16:30:19.067531+00:00",
+  "updated_at": "2026-07-24T16:30:19.067540+00:00"
 }

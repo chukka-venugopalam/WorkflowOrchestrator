@@ -11,10 +11,16 @@ from workflow_orchestrator.agents.implementations.claude_code_agent import Claud
 from workflow_orchestrator.agents.implementations.cursor_agent import CursorAgent
 from workflow_orchestrator.agents.implementations.codex_cli_agent import CodexCLIAgent
 from workflow_orchestrator.agents.implementations.github_copilot_agent import GitHubCopilotAgent
+from workflow_orchestrator.agents.implementations.opencode_agent import OpenCodeAgent
+from workflow_orchestrator.agents.implementations.freebuff_agent import FreeBuffAgent
+from workflow_orchestrator.agents.implementations.antigravity_agent import AntigravityAgent
 
 __all__ = [
     "ClaudeCodeAgent",
     "CursorAgent",
     "CodexCLIAgent",
     "GitHubCopilotAgent",
+    "OpenCodeAgent",
+    "FreeBuffAgent",
+    "AntigravityAgent",
 ]

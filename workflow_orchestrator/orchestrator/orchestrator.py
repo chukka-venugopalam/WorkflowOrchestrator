@@ -38,6 +38,14 @@ from workflow_orchestrator.orchestrator.dashboard import StartupDashboard, Proje
 logger = logging.getLogger(__name__)
 
 
+from workflow_orchestrator.core.security import ApprovalGateEngine
+from workflow_orchestrator.core.plugin_engine import PluginEngine
+from workflow_orchestrator.core.benchmark import BenchmarkRunner, BenchmarkMetrics
+from workflow_orchestrator.core.telemetry import TelemetryTracer
+from workflow_orchestrator.core.version_matrix import VersionMatrix
+from workflow_orchestrator.engine import WorkflowEngine
+
+
 class Orchestrator:
     """The master AI Operating System Orchestrator facade."""
 
@@ -47,7 +55,7 @@ class Orchestrator:
         self.kernel = kernel or Kernel.create_default()
         self.boot_sequence = BootSequence(kernel=self.kernel)
 
-        # Managers & Engines (initialized after boot or dynamically)
+        # Managers & Engines
         self.provider_manager = ProviderManager()
         self.transport_manager = TransportManager()
         self.agent_manager = AgentManager()
@@ -57,6 +65,12 @@ class Orchestrator:
         self.setup_wizard = SetupWizard()
         self.project_flow = ProjectFlowEngine()
         self.self_healing = SelfHealingEngine()
+        self.plugin_engine = PluginEngine()
+        self.benchmark_runner = BenchmarkRunner()
+        self.approval_gate = ApprovalGateEngine()
+        self.telemetry_tracer = TelemetryTracer()
+        self.version_matrix = VersionMatrix()
+        self.workflow_engine = WorkflowEngine()
 
     @classmethod
     def get_instance(cls) -> "Orchestrator":
@@ -69,11 +83,12 @@ class Orchestrator:
         """Run the 14-step boot sequence and wire up all services."""
         report = self.boot_sequence.execute(show_dashboard=show_dashboard)
         
-        # Wire kernel services if booted successfully
         if report.success:
             event_bus = self.kernel.get_service("event_bus") if self.kernel.registry.has_service("event_bus") else None
             self.project_flow = ProjectFlowEngine(event_bus=event_bus)
             self.self_healing = SelfHealingEngine(event_bus=event_bus)
+            self.approval_gate.event_bus = event_bus
+            self.plugin_engine.event_bus = event_bus
 
         return report
 
@@ -88,6 +103,14 @@ class Orchestrator:
     def discover_environment(self) -> CompleteDiscoveryAudit:
         """Run full auto-discovery audit."""
         return self.auto_discovery.run_full_discovery()
+
+    def run_benchmarks(self) -> BenchmarkMetrics:
+        """Run complete performance benchmark suite."""
+        return self.benchmark_runner.run_benchmark_suite()
+
+    def replay_workflow(self, run_id: str) -> Any:
+        """Replay a recorded workflow run deterministically."""
+        return self.workflow_engine.replay_workflow(run_id)
 
     def create_project(
         self,

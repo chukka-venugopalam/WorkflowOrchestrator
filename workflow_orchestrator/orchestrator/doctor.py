@@ -96,7 +96,13 @@ class WorkflowDoctor:
         enabled_count = len([p for p in providers if p.enabled])
         key_count = len([p for p in providers if p.api_key_configured])
         items.append(DiagnosticItem("Providers", "Registered Providers", "OK" if enabled_count > 0 else "WARNING", f"{enabled_count} provider(s) enabled out of {len(providers)}", "Configure providers in setup"))
-        items.append(DiagnosticItem("Providers", "API Key Credentials", "OK" if key_count > 0 else "WARNING", f"{key_count} provider API key(s) configured", "Set ANTHROPIC_API_KEY / OPENAI_API_KEY / GEMINI_API_KEY"))
+        items.append(DiagnosticItem("Providers", "API Key Credentials", "OK" if key_count > 0 else "WARNING", f"{key_count} provider API key(s) configured", "Set ANTHROPIC_API_KEY / OPENAI_API_KEY / GEMINI_API_KEY / OPENROUTER_API_KEY"))
+        
+        sim_providers = [p.name for p in providers if not p.api_key_configured]
+        if sim_providers:
+            items.append(DiagnosticItem("Providers", "Execution Mode", "INFO", f"Providers running in SIMULATION_MODE due to missing API keys: {', '.join(sim_providers)}", "Provide API keys for REAL_API execution"))
+        else:
+            items.append(DiagnosticItem("Providers", "Execution Mode", "OK", "All registered providers configured for REAL_API execution", None))
 
         # 4. Agents
         agents = self.agent_mgr.discover_agents()

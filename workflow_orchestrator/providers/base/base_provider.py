@@ -117,6 +117,10 @@ class BaseProvider(IProvider):
     # Execution
     # ------------------------------------------------------------------
 
+    async def execute(self, request: ExecutionRequest) -> ExecutionResult:
+        """Alias for submit() for provider execution."""
+        return await self.submit(request)
+
     async def submit(self, request: ExecutionRequest) -> ExecutionResult:
         """Submit a task for execution and wait for completion.
 

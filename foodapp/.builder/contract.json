@@ -1,6 +1,6 @@
 {
-  "contract_id": "b9271663c535",
-  "project_id": "2e560499d7d5",
+  "contract_id": "9522f7195cd6",
+  "project_id": "2cfe9b217cf0",
   "project_name": "FoodApp",
   "version": "1.0.0",
   "status": "draft",
@@ -23,6 +23,6 @@
   "milestones": [],
   "acceptance_criteria": [],
   "human_decisions": [],
-  "created_at": "2026-07-23T16:27:08.768772+00:00",
-  "updated_at": "2026-07-23T16:27:08.768806+00:00"
+  "created_at": "2026-07-24T16:30:10.840639+00:00",
+  "updated_at": "2026-07-24T16:30:10.840648+00:00"
 }
