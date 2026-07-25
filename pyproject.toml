@@ -1,0 +1,77 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "workflow-orchestrator"
+version = "3.0.0"
+description = "A deterministic, provider-agnostic workflow operating system for software engineering"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [
+    { name = "Workflow Orchestrator Contributors" },
+]
+requires-python = ">=3.12"
+keywords = ["automation", "workflow", "devops", "cli", "orchestrator"]
+
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Build Tools",
+    "Topic :: System :: Automation",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+]
+
+dependencies = [
+    "pyperclip>=1.8.2",
+    "PyYAML>=6.0",
+    "rich>=13.0",
+    "typer>=0.9.0",
+    "apscheduler>=3.10.0",
+    "httpx>=0.25.0",
+    "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "pytest-asyncio>=0.21.0",
+    "mypy>=1.0",
+    "ruff>=0.1.0",
+]
+
+[project.scripts]
+workflow = "workflow_orchestrator.cli:entry_point"
+workflow-orchestrator = "workflow_orchestrator.main:main"
+wo-kernel = "workflow_orchestrator.core.kernel:main"
+
+[tool.setuptools.packages.find]
+include = ["workflow_orchestrator*"]
+
+[tool.pytest.ini_options]
+testpaths = ["workflow_orchestrator/tests"]
+addopts = "-v --tb=short"
+
+[tool.mypy]
+python_version = "3.12"
+strict = false
+ignore_missing_imports = true
+warn_unused_ignores = true
+exclude = [
+    "workflow_orchestrator/tests/",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+select = ["E", "F", "W", "I", "N"]
+ignore = ["E501"]
+
+[tool.coverage.run]
+source = ["workflow_orchestrator"]
+omit = ["*/tests/*"]

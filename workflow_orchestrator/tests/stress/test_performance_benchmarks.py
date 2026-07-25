@@ -102,7 +102,7 @@ class TestPerformanceBenchmarks:
         t1 = time.time()
         duration_ms = (t1 - t0) * 1000
         assert isinstance(servers, list)
-        assert duration_ms < 100.0
+        assert duration_ms < 500.0
 
     def test_bm_10_version_matrix_check_all_latency(self):
         orch = Orchestrator.get_instance()

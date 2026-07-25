@@ -12,7 +12,6 @@ from workflow_orchestrator.orchestrator.transport_manager import TransportManage
 from workflow_orchestrator.orchestrator.agent_manager import AgentManager
 from workflow_orchestrator.orchestrator.mcp_manager import MCPManager
 from workflow_orchestrator.orchestrator.discovery import AutoDiscovery
-from workflow_orchestrator.orchestrator.doctor import WorkflowDoctor
 from workflow_orchestrator.orchestrator.first_run import SetupWizard
 from workflow_orchestrator.orchestrator.project_flow import ProjectFlowEngine
 from workflow_orchestrator.orchestrator.self_healing import SelfHealingEngine
@@ -34,3 +33,10 @@ __all__ = [
     "StartupDashboard",
     "ProjectDashboard",
 ]
+
+
+def __getattr__(name: str) -> getattr:
+    if name == "WorkflowDoctor":
+        from workflow_orchestrator.orchestrator.doctor import WorkflowDoctor
+        return WorkflowDoctor
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

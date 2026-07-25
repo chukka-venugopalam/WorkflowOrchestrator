@@ -1,0 +1,8 @@
+# Decisions - todo_app_demo
+
+## Decision Log
+
+| Date | Decision | Rationale |
+|------|----------|----------|
+| 2026-07-25 | Project initiated | Automated project generation |
+| 2026-07-25 | Architecture selected | Based on project requirements |

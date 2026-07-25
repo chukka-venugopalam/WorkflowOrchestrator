@@ -15,6 +15,12 @@ import sys
 from pathlib import Path
 from typing import Any, Optional
 
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 from rich import print as rprint
 from rich.console import Console
 from rich.panel import Panel
