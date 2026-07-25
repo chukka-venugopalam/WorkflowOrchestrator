@@ -174,7 +174,7 @@ class SecretRedactor:
     """Log masker redacting sensitive API keys, tokens, and credentials."""
 
     SECRET_PATTERNS = [
-        re.compile(r"sk-[a-zA-Z0-9]{20,}"),
+        re.compile(r"sk-[a-zA-Z0-9_\-]{20,}"),
         re.compile(r"ghp_[a-zA-Z0-9]{20,}"),
         re.compile(r"eyJ[a-zA-Z0-9_-]{20,}\.[a-zA-Z0-9_-]{20,}"),
         re.compile(r"(api[_-]?key|password|secret|auth)[=:\s]+['\"]?([a-zA-Z0-9_\-\.]+)", re.IGNORECASE),
