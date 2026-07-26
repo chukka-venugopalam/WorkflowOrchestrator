@@ -51,6 +51,7 @@ class DetectedProvider:
     path: str = ""
     detected_from: str = ""
     available: bool = False
+    unavailable_reason: str = ""
 
 
 class ProviderDetector:
@@ -96,13 +97,15 @@ class ProviderDetector:
             self._detect_continue,
             self._detect_opencode,
             self._detect_freebuff,
+            self._detect_ollama,
+            self._detect_openrouter,
         ]
 
         for detector in detectors:
             try:
                 provider = detector()
+                detected.append(provider)
                 if provider.available:
-                    detected.append(provider)
                     self._publish_event("integration.provider_detected", {
                         "provider_id": provider.provider_id,
                         "transport": provider.transport,
@@ -111,7 +114,7 @@ class ProviderDetector:
             except Exception:
                 continue
 
-        logger.info("Detected %d installed providers", len(detected))
+        logger.info("Detected %d total provider statuses", len(detected))
         return detected
 
     def _detect_claude_desktop(self) -> DetectedProvider:
@@ -127,6 +130,7 @@ class ProviderDetector:
                 path=str(claude_path),
                 detected_from="macOS Application Support",
                 available=True,
+                unavailable_reason="",
             )
         # Windows
         win_claude = Path(os.environ.get("LOCALAPPDATA", "")) / "Claude"
@@ -139,8 +143,14 @@ class ProviderDetector:
                 path=str(win_claude),
                 detected_from="Windows AppData",
                 available=True,
+                unavailable_reason="",
             )
-        return DetectedProvider(provider_id="anthropic.claude", name="Claude Desktop")
+        return DetectedProvider(
+            provider_id="anthropic.claude",
+            name="Claude Desktop",
+            available=False,
+            unavailable_reason="Claude Desktop App directory not found in AppData/Application Support",
+        )
 
     def _detect_claude_code(self) -> DetectedProvider:
         """Detect Claude Code CLI."""
@@ -160,8 +170,14 @@ class ProviderDetector:
                 path=claude_path,
                 detected_from="PATH",
                 available=True,
+                unavailable_reason="",
             )
-        return DetectedProvider(provider_id="anthropic.claude", name="Claude Code")
+        return DetectedProvider(
+            provider_id="anthropic.claude",
+            name="Claude Code",
+            available=False,
+            unavailable_reason="'claude' executable not found on PATH",
+        )
 
     def _detect_chatgpt_desktop(self) -> DetectedProvider:
         """Detect ChatGPT Desktop application."""
@@ -176,8 +192,14 @@ class ProviderDetector:
                 path=str(chatgpt_path),
                 detected_from="/Applications",
                 available=True,
+                unavailable_reason="",
             )
-        return DetectedProvider(provider_id="openai.chatgpt", name="ChatGPT Desktop")
+        return DetectedProvider(
+            provider_id="openai.chatgpt",
+            name="ChatGPT Desktop",
+            available=False,
+            unavailable_reason="ChatGPT Desktop App not found in /Applications",
+        )
 
     def _detect_gemini_cli(self) -> DetectedProvider:
         """Detect Gemini CLI."""
@@ -191,8 +213,14 @@ class ProviderDetector:
                 path=gemini_path,
                 detected_from="PATH",
                 available=True,
+                unavailable_reason="",
             )
-        return DetectedProvider(provider_id="google.gemini", name="Gemini CLI")
+        return DetectedProvider(
+            provider_id="google.gemini",
+            name="Gemini CLI",
+            available=False,
+            unavailable_reason="'gemini' executable not found on PATH",
+        )
 
     def _detect_cursor(self) -> DetectedProvider:
         """Detect Cursor editor."""
@@ -206,6 +234,7 @@ class ProviderDetector:
                 path=cursor_path,
                 detected_from="PATH",
                 available=True,
+                unavailable_reason="",
             )
         # macOS
         mac_cursor = Path("/Applications/Cursor.app")
@@ -218,8 +247,14 @@ class ProviderDetector:
                 path=str(mac_cursor),
                 detected_from="/Applications",
                 available=True,
+                unavailable_reason="",
             )
-        return DetectedProvider(provider_id="cursor", name="Cursor")
+        return DetectedProvider(
+            provider_id="cursor",
+            name="Cursor",
+            available=False,
+            unavailable_reason="'cursor' executable or /Applications/Cursor.app not found",
+        )
 
     def _detect_codex_cli(self) -> DetectedProvider:
         """Detect Codex CLI."""
@@ -233,8 +268,14 @@ class ProviderDetector:
                 path=codex_path,
                 detected_from="PATH",
                 available=True,
+                unavailable_reason="",
             )
-        return DetectedProvider(provider_id="codex", name="Codex CLI")
+        return DetectedProvider(
+            provider_id="codex",
+            name="Codex CLI",
+            available=False,
+            unavailable_reason="'codex' executable not found on PATH",
+        )
 
     def _detect_copilot(self) -> DetectedProvider:
         """Detect GitHub Copilot."""
@@ -250,8 +291,14 @@ class ProviderDetector:
                     path=str(ext),
                     detected_from="VS Code extensions",
                     available=True,
+                    unavailable_reason="",
                 )
-        return DetectedProvider(provider_id="github.copilot", name="GitHub Copilot")
+        return DetectedProvider(
+            provider_id="github.copilot",
+            name="GitHub Copilot",
+            available=False,
+            unavailable_reason="~/.vscode/extensions has no github.copilot-* entry",
+        )
 
     def _detect_continue(self) -> DetectedProvider:
         """Detect Continue.dev extension."""
@@ -267,8 +314,14 @@ class ProviderDetector:
                     path=str(ext),
                     detected_from="VS Code extensions",
                     available=True,
+                    unavailable_reason="",
                 )
-        return DetectedProvider(provider_id="continue", name="Continue")
+        return DetectedProvider(
+            provider_id="continue",
+            name="Continue",
+            available=False,
+            unavailable_reason="~/.vscode/extensions has no continue.continue-* entry",
+        )
 
     def _detect_opencode(self) -> DetectedProvider:
         """Detect OpenCode CLI."""
@@ -282,8 +335,14 @@ class ProviderDetector:
                 path=opencode_path,
                 detected_from="PATH",
                 available=True,
+                unavailable_reason="",
             )
-        return DetectedProvider(provider_id="opencode", name="OpenCode")
+        return DetectedProvider(
+            provider_id="opencode",
+            name="OpenCode",
+            available=False,
+            unavailable_reason="'opencode' executable not found on PATH",
+        )
 
     def _detect_freebuff(self) -> DetectedProvider:
         """Detect FreeBuff CLI."""
@@ -297,8 +356,79 @@ class ProviderDetector:
                 path=freebuff_path,
                 detected_from="PATH",
                 available=True,
+                unavailable_reason="",
             )
-        return DetectedProvider(provider_id="freebuff", name="FreeBuff")
+        return DetectedProvider(
+            provider_id="freebuff",
+            name="FreeBuff",
+            available=False,
+            unavailable_reason="'freebuff' executable not found on PATH",
+        )
+
+    def _detect_ollama(self) -> DetectedProvider:
+        """Detect Ollama local engine."""
+        ollama_path = shutil.which("ollama")
+        if ollama_path:
+            return DetectedProvider(
+                provider_id="ollama",
+                name="Ollama",
+                version="detected",
+                transport="local",
+                path=ollama_path,
+                detected_from="PATH",
+                available=True,
+                unavailable_reason="",
+            )
+        # Fall back to HTTP probe of http://127.0.0.1:11434/api/tags
+        try:
+            import urllib.request
+            req = urllib.request.Request("http://127.0.0.1:11434/api/tags", method="GET")
+            with urllib.request.urlopen(req, timeout=1.0) as resp:
+                if resp.status == 200:
+                    return DetectedProvider(
+                        provider_id="ollama",
+                        name="Ollama",
+                        version="detected",
+                        transport="local",
+                        path="http://127.0.0.1:11434",
+                        detected_from="http://127.0.0.1:11434",
+                        available=True,
+                        unavailable_reason="",
+                    )
+        except Exception:
+            pass
+
+        return DetectedProvider(
+            provider_id="ollama",
+            name="Ollama",
+            transport="local",
+            available=False,
+            detected_from="system_scan",
+            unavailable_reason="'ollama' binary not found on PATH and http://127.0.0.1:11434 not responding",
+        )
+
+    def _detect_openrouter(self) -> DetectedProvider:
+        """Detect OpenRouter API service via environment key."""
+        has_key = bool(os.environ.get("OPENROUTER_API_KEY") or os.environ.get("OPENROUTER_KEY"))
+        if has_key:
+            return DetectedProvider(
+                provider_id="openrouter",
+                name="OpenRouter",
+                version="cloud",
+                transport="rest_api",
+                detected_from="OPENROUTER_API_KEY env var",
+                available=True,
+                unavailable_reason="",
+            )
+        return DetectedProvider(
+            provider_id="openrouter",
+            name="OpenRouter",
+            version="cloud",
+            transport="rest_api",
+            detected_from="cloud_api",
+            available=False,
+            unavailable_reason="OpenRouter API key not configured in environment",
+        )
 
     def _publish_event(self, event_type: str, data: dict[str, Any]) -> None:
         """Publish an event if an event bus is available."""

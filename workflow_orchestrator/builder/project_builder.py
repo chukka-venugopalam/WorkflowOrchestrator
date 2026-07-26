@@ -215,7 +215,12 @@ class ProjectBuilder:
     # Main build entry point
     # ------------------------------------------------------------------
 
-    def build(self, idea: str, project_name: str = "") -> dict[str, Any]:
+    def build(
+        self,
+        idea: str,
+        project_name: str = "",
+        project_root: Optional[Path] = None,
+    ) -> dict[str, Any]:
         """Build a complete project from a natural-language idea.
 
         This is the primary entry point. It orchestrates the entire
@@ -224,10 +229,16 @@ class ProjectBuilder:
         Args:
             idea: The natural-language project idea (e.g., "Build a Food Delivery Platform").
             project_name: Optional explicit project name.
+            project_root: Optional target workspace root directory.
 
         Returns:
             Dict with build results including project_id, status, and artifacts.
         """
+        if project_root is not None:
+            root_path = Path(project_root)
+            self._config.builder.project_root = root_path
+            self._initializer._config.project_root = root_path
+
         pid = uuid.uuid4().hex[:12]
         name = project_name or self._derive_project_name(idea)
         start_time = time.time()

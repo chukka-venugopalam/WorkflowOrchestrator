@@ -115,7 +115,8 @@ def handle_create_project(orchestrator: Orchestrator) -> None:
     name = Prompt.ask("[bold yellow]Project name (optional, press Enter to auto-generate)[/]", default="")
     name_val = name.strip() if name.strip() else None
 
-    console.print("\n[bold green]Launching AI Operating System Project Pipeline...[/]\n")
+    console.print("\n[bold green]Launching AI Operating System Project Pipeline...[/]")
+    console.print("[dim white]Note: Project build pipeline is active. Real-time task progress will be logged below (pipeline timeout: 10 minutes)...[/]\n")
     rec = orchestrator.create_project(idea=idea, project_name=name_val)
 
     if rec.status == "completed":
@@ -169,10 +170,12 @@ def handle_providers(orchestrator: Orchestrator) -> None:
     table.add_column("Status", style="white")
     table.add_column("API Key", style="yellow")
     table.add_column("Transport", style="dim white")
+    table.add_column("Status Reason / Details", style="dim yellow")
 
     for p in providers:
         key_status = "Configured ✓" if p.api_key_configured else "Missing"
-        table.add_row(p.name, p.status.upper(), key_status, p.preferred_transport)
+        reason = p.unavailable_reason if (p.status != "available" and not p.api_key_configured) else "Ready"
+        table.add_row(p.name, p.status.upper(), key_status, p.preferred_transport, reason)
 
     console.print(table)
 
@@ -267,6 +270,9 @@ def handle_logs(orchestrator: Orchestrator) -> None:
 
 def main() -> None:
     """Main application loop."""
+    from workflow_orchestrator.core.logger import configure_logging
+    configure_logging(level="INFO", log_to_file=True, log_to_console=True)
+
     console.print("\n[bold cyan]Booting Workflow Orchestrator AI Operating System...[/]\n")
     orchestrator = Orchestrator.get_instance()
     boot_report = orchestrator.boot(show_dashboard=True)

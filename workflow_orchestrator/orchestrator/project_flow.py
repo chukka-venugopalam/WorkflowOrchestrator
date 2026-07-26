@@ -119,14 +119,55 @@ class ProjectFlowEngine:
             session = self.session_mgr.create_session(project=project_name, metadata={"goal": idea})
             self._emit_event("session.created", {"session_id": session.session_id})
 
-            # Step 2: Invoke Builder pipeline
+            # Step 2: Invoke Builder pipeline & Real Parallel Desktop Worker Task Queue
             target = Path(workspace_dir) if workspace_dir else Path.cwd()
             config = BuilderConfig(project_root=target)
-            
+
             build_result: Dict[str, Any] = self.builder.build(
                 idea=idea,
                 project_name=project_name or "",
+                project_root=target,
             )
+
+            # CEO Orchestrator Multi-Worker Task Dispatch & Verification
+            from workflow_orchestrator.execution.parallel_task_queue import ParallelTaskQueue
+            from workflow_orchestrator.orchestrator.orchestrator import Orchestrator
+
+            worker_registry = Orchestrator.get_instance().worker_registry
+            task_queue = ParallelTaskQueue(worker_registry=worker_registry)
+
+            # Queue DAG Nodes with skill requirements
+            t1 = task_queue.add_task(
+                task_id="task_backend",
+                title="Build Backend API",
+                required_skill="backend_api",
+                prompt=f"Build Backend API endpoints for: {idea}",
+            )
+            t2 = task_queue.add_task(
+                task_id="task_frontend",
+                title="Build Frontend UI",
+                required_skill="frontend_ui",
+                prompt=f"Build Frontend UI components for: {idea}",
+                dependencies=["task_backend"],
+            )
+            t3 = task_queue.add_task(
+                task_id="task_tests",
+                title="Build Unit Tests",
+                required_skill="unit_testing",
+                prompt=f"Create Unit Tests for: {idea}",
+                dependencies=["task_backend"],
+            )
+            t4 = task_queue.add_task(
+                task_id="task_deployment",
+                title="Build Deployment Package",
+                required_skill="deployment",
+                prompt=f"Generate Docker & Deployment scripts for: {idea}",
+                dependencies=["task_frontend", "task_tests"],
+            )
+
+            # Execute real desktop worker orchestration queue
+            queue_results = task_queue.execute_queue(workspace_dir=target)
+            logger.info("Real Desktop Worker Queue Results: %s", queue_results)
 
             p_name = build_result.get("project_name", project_name or "ai_project")
             success = build_result.get("success", True)

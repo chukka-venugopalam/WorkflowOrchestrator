@@ -55,6 +55,7 @@ class ProviderMetadata:
     version: str = "1.0.0"
     status: str = "available"
     authentication_type: str = "api_key"
+    unavailable_reason: str = ""
 
 
 class ProviderManager:
@@ -77,7 +78,25 @@ class ProviderManager:
         "freebuff",
         "opencode",
         "codex_cli",
+        "continue",
     ]
+
+    PROVIDER_ID_MAP: Dict[str, List[str]] = {
+        "claude": ["anthropic.claude", "claude"],
+        "chatgpt": ["openai.chatgpt", "chatgpt"],
+        "gemini": ["google.gemini", "gemini"],
+        "openrouter": ["openrouter", "openrouter.api"],
+        "ollama": ["ollama", "ollama.local"],
+        "azure_openai": ["azure.openai", "azure_openai"],
+        "openai_codex": ["openai.codex", "codex"],
+        "cursor": ["cursor"],
+        "github_copilot": ["github.copilot", "github_copilot"],
+        "claude_code": ["anthropic.claude", "claude_code"],
+        "freebuff": ["freebuff"],
+        "opencode": ["opencode"],
+        "codex_cli": ["codex", "codex_cli"],
+        "continue": ["continue"],
+    }
 
     def __init__(
         self,
@@ -98,18 +117,30 @@ class ProviderManager:
     def discover_and_load(self) -> List[ProviderMetadata]:
         """Discover installed providers and load their current status."""
         detected = self.detector.detect_all()
-        detected_ids = {p.provider_id: p for p in detected}
+        detected_map: Dict[str, DetectedProvider] = {}
+        for p in detected:
+            detected_map[p.provider_id] = p
+            if "." in p.provider_id:
+                detected_map[p.provider_id.split(".")[-1]] = p
 
         results: List[ProviderMetadata] = []
 
         for pid in self.KNOWN_PROVIDERS:
-            det = detected_ids.get(pid)
+            det = None
+            for candidate in self.PROVIDER_ID_MAP.get(pid, [pid]):
+                if candidate in detected_map:
+                    det = detected_map[candidate]
+                    break
+
             has_key = self.cred_mgr.has_api_key(f"{pid.upper()}_API_KEY") or self.cred_mgr.has_api_key(f"{pid.upper()}_KEY")
-            
             cfg = self.config_mgr.read(pid) or {}
-            
             cli_p = getattr(det, "cli_path", getattr(det, "path", None)) if det else cfg.get("cli_path")
-            
+
+            is_avail = (det and getattr(det, "available", False)) or has_key
+            unavail_reason = "" if is_avail else (
+                getattr(det, "unavailable_reason", "") or f"'{pid}' executable or API key not detected"
+            )
+
             meta = ProviderMetadata(
                 name=cfg.get("name", pid.replace("_", " ").title()),
                 provider_id=pid,
@@ -118,18 +149,21 @@ class ProviderManager:
                 cost=cfg.get("cost", "medium"),
                 quality=cfg.get("quality", "high"),
                 speed=cfg.get("speed", "fast"),
-                preferred_transport=cfg.get("transport", "rest_api"),
+                preferred_transport=getattr(det, "transport", cfg.get("transport", "rest_api")) if det else cfg.get("transport", "rest_api"),
                 api_key_configured=has_key,
                 cli_path=cli_p,
                 browser_login=getattr(det, "browser_login", False) if det else False,
                 desktop_login=getattr(det, "desktop_login", False) if det else False,
                 mcp_enabled=cfg.get("mcp_enabled", False),
-                health="healthy" if (det and getattr(det, "available", False)) or has_key else "unknown",
+                health="healthy" if is_avail else "unknown",
                 version=getattr(det, "version", "1.0.0") if det else cfg.get("version", "1.0.0"),
-                status="available" if (det and getattr(det, "available", False)) or has_key else "unconfigured",
+                status="available" if is_avail else "unconfigured",
                 authentication_type="api_key" if has_key else ("cli" if cli_p else "none"),
+                unavailable_reason=unavail_reason,
             )
             results.append(meta)
+
+        return results
 
         return results
 

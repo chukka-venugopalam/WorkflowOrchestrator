@@ -46,6 +46,16 @@ from workflow_orchestrator.core.version_matrix import VersionMatrix
 from workflow_orchestrator.engine import WorkflowEngine
 
 
+from workflow_orchestrator.workers.worker_registry import DesktopWorkerRegistry
+from workflow_orchestrator.workers.implementations import (
+    ClaudeCodeDesktopWorker,
+    CursorDesktopWorker,
+    CopilotDesktopWorker,
+    OpenCodeDesktopWorker,
+    OllamaDesktopWorker,
+)
+
+
 class Orchestrator:
     """The master AI Operating System Orchestrator facade."""
 
@@ -55,7 +65,13 @@ class Orchestrator:
         self.kernel = kernel or Kernel.create_default()
         self.boot_sequence = BootSequence(kernel=self.kernel)
 
-        # Managers & Engines
+        # Managers, Registries & Engines
+        self.worker_registry = DesktopWorkerRegistry()
+        self._register_default_desktop_workers()
+
+        from workflow_orchestrator.orchestrator.autonomous_loop import AutonomousProjectLoop
+        self.autonomous_loop = AutonomousProjectLoop(worker_registry=self.worker_registry)
+
         self.provider_manager = ProviderManager()
         self.transport_manager = TransportManager()
         self.agent_manager = AgentManager()
@@ -71,6 +87,14 @@ class Orchestrator:
         self.telemetry_tracer = TelemetryTracer()
         self.version_matrix = VersionMatrix()
         self.workflow_engine = WorkflowEngine()
+
+    def _register_default_desktop_workers(self) -> None:
+        """Register local desktop AI workers operating without cloud APIs."""
+        self.worker_registry.register_worker(ClaudeCodeDesktopWorker())
+        self.worker_registry.register_worker(CursorDesktopWorker())
+        self.worker_registry.register_worker(CopilotDesktopWorker())
+        self.worker_registry.register_worker(OpenCodeDesktopWorker())
+        self.worker_registry.register_worker(OllamaDesktopWorker())
 
     @classmethod
     def get_instance(cls) -> "Orchestrator":

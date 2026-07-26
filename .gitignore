@@ -24,6 +24,20 @@ env/
 # Logs
 logs/*.log
 
+# Temporary build & workspace state
+scratch/
+.builder/
+.state/
+foodapp/
+simple_web_app/
+sanke_game/
+sudomu/
+todo_app/
+todo_app_demo/
+test_app/
+web_application/
+[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]/
+
 # Data
 data/history.json
 
