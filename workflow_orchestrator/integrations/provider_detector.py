@@ -118,9 +118,39 @@ class ProviderDetector:
         logger.info("Detected %d total provider statuses", len(detected))
         return detected
 
+    def _is_process_running(self, name_pattern: str) -> tuple[bool, str]:
+        """Check if a process matching name_pattern is currently running on Windows/OS."""
+        if sys.platform == "win32":
+            try:
+                res = subprocess.run(["tasklist", "/FO", "CSV", "/NH"], capture_output=True, text=True, timeout=3)
+                if res.returncode == 0:
+                    pattern_lower = name_pattern.lower()
+                    for line in res.stdout.splitlines():
+                        if pattern_lower in line.lower():
+                            parts = line.split(",")
+                            img_name = parts[0].strip('"') if parts else name_pattern
+                            return True, f"Running Process '{img_name}'"
+            except Exception:
+                pass
+        return False, ""
+
     def _detect_claude_desktop(self) -> DetectedProvider:
         """Detect Claude Desktop application across macOS and Windows."""
-        # macOS
+        # 1. Check running process
+        running, proc_msg = self._is_process_running("claude")
+        if running:
+            return DetectedProvider(
+                provider_id="anthropic.claude",
+                name="Claude Desktop",
+                version="detected",
+                transport="desktop",
+                path=proc_msg,
+                detected_from=proc_msg,
+                available=True,
+                unavailable_reason="",
+            )
+
+        # 2. Check filesystem paths
         claude_path = Path.home() / "Library" / "Application Support" / "Claude"
         if claude_path.exists():
             return DetectedProvider(
@@ -133,7 +163,6 @@ class ProviderDetector:
                 available=True,
                 unavailable_reason="",
             )
-        # Windows
         win_paths = [
             Path(os.environ.get("LOCALAPPDATA", "")) / "Claude",
             Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "Claude" / "Claude.exe",
@@ -156,7 +185,7 @@ class ProviderDetector:
             provider_id="anthropic.claude",
             name="Claude Desktop",
             available=False,
-            unavailable_reason="Claude Desktop App not found in standard AppData/ProgramFiles paths",
+            unavailable_reason="Claude Desktop process or installation path not detected",
         )
 
     def _detect_claude_code(self) -> DetectedProvider:
@@ -192,6 +221,21 @@ class ProviderDetector:
 
     def _detect_chatgpt_desktop(self) -> DetectedProvider:
         """Detect ChatGPT Desktop application."""
+        # 1. Check running process
+        running, proc_msg = self._is_process_running("chatgpt")
+        if running:
+            return DetectedProvider(
+                provider_id="openai.chatgpt",
+                name="ChatGPT Desktop",
+                version="detected",
+                transport="desktop",
+                path=proc_msg,
+                detected_from=proc_msg,
+                available=True,
+                unavailable_reason="",
+            )
+
+        # 2. Check filesystem paths
         mac_path = Path("/Applications/ChatGPT.app")
         if mac_path.exists():
             return DetectedProvider(
@@ -237,11 +281,11 @@ class ProviderDetector:
             provider_id="openai.chatgpt",
             name="ChatGPT Desktop",
             available=False,
-            unavailable_reason="ChatGPT Desktop App not found in standard paths or PATH",
+            unavailable_reason="ChatGPT Desktop process or installation path not detected",
         )
 
     def _detect_gemini_cli(self) -> DetectedProvider:
-        """Detect Gemini CLI."""
+        """Detect Gemini CLI or Gemini Web via Brave/Chrome browser."""
         gemini_path = shutil.which("gemini")
         if gemini_path:
             return DetectedProvider(
@@ -254,11 +298,38 @@ class ProviderDetector:
                 available=True,
                 unavailable_reason="",
             )
+        # Check running web browsers (Brave, Chrome, Edge) for Gemini Web transport
+        for b_proc in ["brave", "chrome", "msedge"]:
+            running, proc_msg = self._is_process_running(b_proc)
+            if running:
+                return DetectedProvider(
+                    provider_id="google.gemini",
+                    name="Gemini (Web)",
+                    version="web",
+                    transport="browser",
+                    path=proc_msg,
+                    detected_from=f"Web Transport ({proc_msg})",
+                    available=True,
+                    unavailable_reason="",
+                )
+        # Check browser installation paths
+        brave_path = Path(os.environ.get("LOCALAPPDATA", "")) / "BraveSoftware" / "Brave-Browser" / "Application" / "brave.exe"
+        if brave_path.exists():
+            return DetectedProvider(
+                provider_id="google.gemini",
+                name="Gemini (Web)",
+                version="web",
+                transport="browser",
+                path=str(brave_path),
+                detected_from="Brave Browser",
+                available=True,
+                unavailable_reason="",
+            )
         return DetectedProvider(
             provider_id="google.gemini",
             name="Gemini CLI",
             available=False,
-            unavailable_reason="'gemini' executable not found on PATH",
+            unavailable_reason="'gemini' CLI or Brave/Chrome/Edge browser process not detected",
         )
 
     def _detect_cursor(self) -> DetectedProvider:

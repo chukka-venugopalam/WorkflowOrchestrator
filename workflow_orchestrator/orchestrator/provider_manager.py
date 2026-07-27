@@ -121,9 +121,12 @@ class ProviderManager:
         detected = self.detector.detect_all()
         detected_map: Dict[str, DetectedProvider] = {}
         for p in detected:
-            detected_map[p.provider_id] = p
+            if p.provider_id not in detected_map or (p.available and not detected_map[p.provider_id].available):
+                detected_map[p.provider_id] = p
             if "." in p.provider_id:
-                detected_map[p.provider_id.split(".")[-1]] = p
+                short_k = p.provider_id.split(".")[-1]
+                if short_k not in detected_map or (p.available and not detected_map[short_k].available):
+                    detected_map[short_k] = p
 
         results: List[ProviderMetadata] = []
 
