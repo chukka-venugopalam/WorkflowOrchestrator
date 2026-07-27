@@ -79,6 +79,7 @@ class ProviderManager:
         "opencode",
         "codex_cli",
         "continue",
+        "antigravity",
     ]
 
     PROVIDER_ID_MAP: Dict[str, List[str]] = {
@@ -96,6 +97,7 @@ class ProviderManager:
         "opencode": ["opencode"],
         "codex_cli": ["codex", "codex_cli"],
         "continue": ["continue"],
+        "antigravity": ["antigravity"],
     }
 
     def __init__(

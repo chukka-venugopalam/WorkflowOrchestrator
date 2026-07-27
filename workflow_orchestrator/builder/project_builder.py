@@ -90,7 +90,7 @@ class ProjectBuilderConfig:
     """
 
     builder: BuilderConfig = field(default_factory=BuilderConfig)
-    auto_execute: bool = False
+    auto_execute: bool = True
     create_checkpoints: bool = True
     verify_after_tasks: bool = True
     generate_docs: bool = True

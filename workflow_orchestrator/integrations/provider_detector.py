@@ -99,6 +99,7 @@ class ProviderDetector:
             self._detect_freebuff,
             self._detect_ollama,
             self._detect_openrouter,
+            self._detect_antigravity,
         ]
 
         for detector in detectors:
@@ -118,7 +119,7 @@ class ProviderDetector:
         return detected
 
     def _detect_claude_desktop(self) -> DetectedProvider:
-        """Detect Claude Desktop application."""
+        """Detect Claude Desktop application across macOS and Windows."""
         # macOS
         claude_path = Path.home() / "Library" / "Application Support" / "Claude"
         if claude_path.exists():
@@ -133,32 +134,42 @@ class ProviderDetector:
                 unavailable_reason="",
             )
         # Windows
-        win_claude = Path(os.environ.get("LOCALAPPDATA", "")) / "Claude"
-        if win_claude.exists():
-            return DetectedProvider(
-                provider_id="anthropic.claude",
-                name="Claude Desktop",
-                version="detected",
-                transport="desktop",
-                path=str(win_claude),
-                detected_from="Windows AppData",
-                available=True,
-                unavailable_reason="",
-            )
+        win_paths = [
+            Path(os.environ.get("LOCALAPPDATA", "")) / "Claude",
+            Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "Claude" / "Claude.exe",
+            Path(os.environ.get("PROGRAMFILES", "")) / "Claude" / "Claude.exe",
+            Path(os.environ.get("ProgramFiles(x86)", "")) / "Claude" / "Claude.exe",
+        ]
+        for wp in win_paths:
+            if wp.exists():
+                return DetectedProvider(
+                    provider_id="anthropic.claude",
+                    name="Claude Desktop",
+                    version="detected",
+                    transport="desktop",
+                    path=str(wp),
+                    detected_from="Windows Installation",
+                    available=True,
+                    unavailable_reason="",
+                )
         return DetectedProvider(
             provider_id="anthropic.claude",
             name="Claude Desktop",
             available=False,
-            unavailable_reason="Claude Desktop App directory not found in AppData/Application Support",
+            unavailable_reason="Claude Desktop App not found in standard AppData/ProgramFiles paths",
         )
 
     def _detect_claude_code(self) -> DetectedProvider:
         """Detect Claude Code CLI."""
         claude_path = shutil.which("claude")
+        if not claude_path:
+            npm_cmd = Path(os.environ.get("APPDATA", "")) / "npm" / "claude.cmd"
+            if npm_cmd.exists():
+                claude_path = str(npm_cmd)
         if claude_path:
             version = ""
             try:
-                result = subprocess.run(["claude", "--version"], capture_output=True, text=True, timeout=5)
+                result = subprocess.run([claude_path, "--version"], capture_output=True, text=True, timeout=5)
                 version = result.stdout.strip() or result.stderr.strip()
             except Exception:
                 pass
@@ -167,8 +178,8 @@ class ProviderDetector:
                 name="Claude Code",
                 version=version or "detected",
                 transport="cli",
-                path=claude_path,
-                detected_from="PATH",
+                path=str(claude_path),
+                detected_from="PATH/npm",
                 available=True,
                 unavailable_reason="",
             )
@@ -176,21 +187,49 @@ class ProviderDetector:
             provider_id="anthropic.claude",
             name="Claude Code",
             available=False,
-            unavailable_reason="'claude' executable not found on PATH",
+            unavailable_reason="'claude' executable not found on PATH or %APPDATA%\\npm",
         )
 
     def _detect_chatgpt_desktop(self) -> DetectedProvider:
         """Detect ChatGPT Desktop application."""
-        # macOS
-        chatgpt_path = Path("/Applications/ChatGPT.app")
-        if chatgpt_path.exists():
+        mac_path = Path("/Applications/ChatGPT.app")
+        if mac_path.exists():
             return DetectedProvider(
                 provider_id="openai.chatgpt",
                 name="ChatGPT Desktop",
                 version="detected",
                 transport="desktop",
-                path=str(chatgpt_path),
+                path=str(mac_path),
                 detected_from="/Applications",
+                available=True,
+                unavailable_reason="",
+            )
+        win_paths = [
+            Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "ChatGPT" / "ChatGPT.exe",
+            Path(os.environ.get("LOCALAPPDATA", "")) / "ChatGPT",
+            Path(os.environ.get("PROGRAMFILES", "")) / "ChatGPT" / "ChatGPT.exe",
+        ]
+        for wp in win_paths:
+            if wp.exists():
+                return DetectedProvider(
+                    provider_id="openai.chatgpt",
+                    name="ChatGPT Desktop",
+                    version="detected",
+                    transport="desktop",
+                    path=str(wp),
+                    detected_from="Windows Installation",
+                    available=True,
+                    unavailable_reason="",
+                )
+        which_chatgpt = shutil.which("chatgpt")
+        if which_chatgpt:
+            return DetectedProvider(
+                provider_id="openai.chatgpt",
+                name="ChatGPT Desktop",
+                version="detected",
+                transport="desktop",
+                path=which_chatgpt,
+                detected_from="PATH",
                 available=True,
                 unavailable_reason="",
             )
@@ -198,7 +237,7 @@ class ProviderDetector:
             provider_id="openai.chatgpt",
             name="ChatGPT Desktop",
             available=False,
-            unavailable_reason="ChatGPT Desktop App not found in /Applications",
+            unavailable_reason="ChatGPT Desktop App not found in standard paths or PATH",
         )
 
     def _detect_gemini_cli(self) -> DetectedProvider:
@@ -223,7 +262,7 @@ class ProviderDetector:
         )
 
     def _detect_cursor(self) -> DetectedProvider:
-        """Detect Cursor editor."""
+        """Detect Cursor editor across Windows and macOS."""
         cursor_path = shutil.which("cursor")
         if cursor_path:
             return DetectedProvider(
@@ -236,7 +275,23 @@ class ProviderDetector:
                 available=True,
                 unavailable_reason="",
             )
-        # macOS
+        win_paths = [
+            Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "cursor" / "Cursor.exe",
+            Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "Cursor" / "Cursor.exe",
+            Path(os.environ.get("LOCALAPPDATA", "")) / "cursor",
+        ]
+        for wp in win_paths:
+            if wp.exists():
+                return DetectedProvider(
+                    provider_id="cursor",
+                    name="Cursor",
+                    version="detected",
+                    transport="desktop",
+                    path=str(wp),
+                    detected_from="Windows AppData",
+                    available=True,
+                    unavailable_reason="",
+                )
         mac_cursor = Path("/Applications/Cursor.app")
         if mac_cursor.exists():
             return DetectedProvider(
@@ -253,7 +308,7 @@ class ProviderDetector:
             provider_id="cursor",
             name="Cursor",
             available=False,
-            unavailable_reason="'cursor' executable or /Applications/Cursor.app not found",
+            unavailable_reason="'cursor' executable or Cursor.exe not found in standard paths",
         )
 
     def _detect_codex_cli(self) -> DetectedProvider:
@@ -278,49 +333,58 @@ class ProviderDetector:
         )
 
     def _detect_copilot(self) -> DetectedProvider:
-        """Detect GitHub Copilot."""
-        # Check VS Code extension
-        vscode_extensions = Path.home() / ".vscode" / "extensions"
-        if vscode_extensions.exists():
-            for ext in vscode_extensions.glob("github.copilot-*"):
-                return DetectedProvider(
-                    provider_id="github.copilot",
-                    name="GitHub Copilot",
-                    version="detected",
-                    transport="desktop",
-                    path=str(ext),
-                    detected_from="VS Code extensions",
-                    available=True,
-                    unavailable_reason="",
-                )
+        """Detect GitHub Copilot extension across VS Code, VS Code Insiders, and Cursor."""
+        ext_dirs = [
+            Path.home() / ".vscode" / "extensions",
+            Path.home() / ".vscode-insiders" / "extensions",
+            Path.home() / ".cursor" / "extensions",
+            Path(os.environ.get("USERPROFILE", "")) / ".vscode" / "extensions",
+        ]
+        for ext_dir in ext_dirs:
+            if ext_dir.exists():
+                for ext in ext_dir.glob("github.copilot-*"):
+                    return DetectedProvider(
+                        provider_id="github.copilot",
+                        name="GitHub Copilot",
+                        version="detected",
+                        transport="desktop",
+                        path=str(ext),
+                        detected_from=f"{ext_dir.name} extensions",
+                        available=True,
+                        unavailable_reason="",
+                    )
         return DetectedProvider(
             provider_id="github.copilot",
             name="GitHub Copilot",
             available=False,
-            unavailable_reason="~/.vscode/extensions has no github.copilot-* entry",
+            unavailable_reason="Extension directories (.vscode, .vscode-insiders, .cursor) have no github.copilot-* entry",
         )
 
     def _detect_continue(self) -> DetectedProvider:
         """Detect Continue.dev extension."""
-        # Check VS Code extension
-        vscode_extensions = Path.home() / ".vscode" / "extensions"
-        if vscode_extensions.exists():
-            for ext in vscode_extensions.glob("continue.continue-*"):
-                return DetectedProvider(
-                    provider_id="continue",
-                    name="Continue",
-                    version="detected",
-                    transport="desktop",
-                    path=str(ext),
-                    detected_from="VS Code extensions",
-                    available=True,
-                    unavailable_reason="",
-                )
+        ext_dirs = [
+            Path.home() / ".vscode" / "extensions",
+            Path.home() / ".vscode-insiders" / "extensions",
+            Path.home() / ".cursor" / "extensions",
+        ]
+        for ext_dir in ext_dirs:
+            if ext_dir.exists():
+                for ext in ext_dir.glob("continue.continue-*"):
+                    return DetectedProvider(
+                        provider_id="continue",
+                        name="Continue",
+                        version="detected",
+                        transport="desktop",
+                        path=str(ext),
+                        detected_from=f"{ext_dir.name} extensions",
+                        available=True,
+                        unavailable_reason="",
+                    )
         return DetectedProvider(
             provider_id="continue",
             name="Continue",
             available=False,
-            unavailable_reason="~/.vscode/extensions has no continue.continue-* entry",
+            unavailable_reason="Extension directories have no continue.continue-* entry",
         )
 
     def _detect_opencode(self) -> DetectedProvider:
@@ -379,7 +443,6 @@ class ProviderDetector:
                 available=True,
                 unavailable_reason="",
             )
-        # Fall back to HTTP probe of http://127.0.0.1:11434/api/tags
         try:
             import urllib.request
             req = urllib.request.Request("http://127.0.0.1:11434/api/tags", method="GET")
@@ -428,6 +491,28 @@ class ProviderDetector:
             detected_from="cloud_api",
             available=False,
             unavailable_reason="OpenRouter API key not configured in environment",
+        )
+
+    def _detect_antigravity(self) -> DetectedProvider:
+        """Detect Antigravity AI agent tool."""
+        agy_path = shutil.which("agy") or shutil.which("antigravity")
+        antigravity_dir = Path.home() / ".gemini" / "antigravity"
+        if agy_path or antigravity_dir.exists():
+            return DetectedProvider(
+                provider_id="antigravity",
+                name="Antigravity",
+                version="detected",
+                transport="desktop",
+                path=str(agy_path or antigravity_dir),
+                detected_from="PATH/~/.gemini/antigravity",
+                available=True,
+                unavailable_reason="",
+            )
+        return DetectedProvider(
+            provider_id="antigravity",
+            name="Antigravity",
+            available=False,
+            unavailable_reason="'agy' executable or ~/.gemini/antigravity directory not found",
         )
 
     def _publish_event(self, event_type: str, data: dict[str, Any]) -> None:

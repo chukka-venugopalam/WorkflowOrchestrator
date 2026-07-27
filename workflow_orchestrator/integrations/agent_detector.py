@@ -73,6 +73,7 @@ class AgentDetector:
             self._detect_opencode,
             self._detect_continue,
             self._detect_copilot,
+            self._detect_antigravity,
             self._detect_factory,
         ]
 
@@ -92,20 +93,25 @@ class AgentDetector:
         return agents
 
     def _detect_claude_code(self) -> DetectedAgent:
-        """Detect Claude Code."""
+        """Detect Claude Code CLI."""
         path = shutil.which("claude")
+        if not path:
+            import os
+            npm_cmd = Path(os.environ.get("APPDATA", "")) / "npm" / "claude.cmd"
+            if npm_cmd.exists():
+                path = str(npm_cmd)
         if path:
             return DetectedAgent(
                 agent_id="claude-code",
                 name="Claude Code",
                 transport="cli",
-                path=path,
+                path=str(path),
                 available=True,
             )
         return DetectedAgent(agent_id="claude-code", name="Claude Code")
 
     def _detect_cursor(self) -> DetectedAgent:
-        """Detect Cursor."""
+        """Detect Cursor editor."""
         path = shutil.which("cursor")
         if path:
             return DetectedAgent(
@@ -115,6 +121,21 @@ class AgentDetector:
                 path=path,
                 available=True,
             )
+        import os
+        win_paths = [
+            Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "cursor" / "Cursor.exe",
+            Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "Cursor" / "Cursor.exe",
+            Path(os.environ.get("LOCALAPPDATA", "")) / "cursor",
+        ]
+        for wp in win_paths:
+            if wp.exists():
+                return DetectedAgent(
+                    agent_id="cursor",
+                    name="Cursor",
+                    transport="desktop",
+                    path=str(wp),
+                    available=True,
+                )
         mac_cursor = Path("/Applications/Cursor.app")
         if mac_cursor.exists():
             return DetectedAgent(
@@ -154,7 +175,6 @@ class AgentDetector:
 
     def _detect_continue(self) -> DetectedAgent:
         """Detect Continue.dev."""
-        # Check via npm or pip
         path = shutil.which("continue")
         if path:
             return DetectedAgent(
@@ -164,21 +184,58 @@ class AgentDetector:
                 path=path,
                 available=True,
             )
+        import os
+        ext_dirs = [
+            Path.home() / ".vscode" / "extensions",
+            Path.home() / ".vscode-insiders" / "extensions",
+            Path.home() / ".cursor" / "extensions",
+        ]
+        for ext_dir in ext_dirs:
+            if ext_dir.exists():
+                for ext in ext_dir.glob("continue.continue-*"):
+                    return DetectedAgent(
+                        agent_id="continue",
+                        name="Continue",
+                        transport="desktop",
+                        path=str(ext),
+                        available=True,
+                    )
         return DetectedAgent(agent_id="continue", name="Continue")
 
     def _detect_copilot(self) -> DetectedAgent:
-        """Detect GitHub Copilot."""
-        vscode_extensions = Path.home() / ".vscode" / "extensions"
-        if vscode_extensions.exists():
-            for ext in vscode_extensions.glob("github.copilot-*"):
-                return DetectedAgent(
-                    agent_id="github-copilot",
-                    name="GitHub Copilot",
-                    transport="desktop",
-                    path=str(ext),
-                    available=True,
-                )
+        """Detect GitHub Copilot extension."""
+        import os
+        ext_dirs = [
+            Path.home() / ".vscode" / "extensions",
+            Path.home() / ".vscode-insiders" / "extensions",
+            Path.home() / ".cursor" / "extensions",
+            Path(os.environ.get("USERPROFILE", "")) / ".vscode" / "extensions",
+        ]
+        for ext_dir in ext_dirs:
+            if ext_dir.exists():
+                for ext in ext_dir.glob("github.copilot-*"):
+                    return DetectedAgent(
+                        agent_id="github-copilot",
+                        name="GitHub Copilot",
+                        transport="desktop",
+                        path=str(ext),
+                        available=True,
+                    )
         return DetectedAgent(agent_id="github-copilot", name="GitHub Copilot")
+
+    def _detect_antigravity(self) -> DetectedAgent:
+        """Detect Antigravity AI agent tool."""
+        agy_path = shutil.which("agy") or shutil.which("antigravity")
+        antigravity_dir = Path.home() / ".gemini" / "antigravity"
+        if agy_path or antigravity_dir.exists():
+            return DetectedAgent(
+                agent_id="antigravity",
+                name="Antigravity",
+                transport="desktop",
+                path=str(agy_path or antigravity_dir),
+                available=True,
+            )
+        return DetectedAgent(agent_id="antigravity", name="Antigravity")
 
     def _detect_factory(self) -> DetectedAgent:
         """Detect Factory AI agent."""

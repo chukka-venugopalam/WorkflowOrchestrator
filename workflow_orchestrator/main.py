@@ -52,13 +52,15 @@ def render_os_header(orchestrator: Orchestrator) -> None:
     console.print()
     console.print(Panel("[bold magenta]═══ Workflow Orchestrator — AI Operating System ═══[/]", box=box.DOUBLE))
 
-    prov_lines = []
+    active_provs = []
+    off_provs = []
     for p in providers:
         if p.enabled and (p.api_key_configured or p.status == "available"):
-            prov_lines.append(f"[green]{p.name} ✓[/]")
+            active_provs.append(f"[green]{p.name} ✓[/]")
         else:
-            prov_lines.append(f"[dim]{p.name} (off)[/]")
+            off_provs.append(f"[dim]{p.name} (off)[/]")
 
+    all_prov_lines = active_provs + off_provs
     mcp_text = f"[bold cyan]MCP Servers:[/] {len([m for m in mcp_servers if m.enabled])} Connected"
     proj_text = f"[bold yellow]Projects:[/] {active_sessions} Active | {completed_sessions} Completed"
 
@@ -66,7 +68,7 @@ def render_os_header(orchestrator: Orchestrator) -> None:
     header_table.add_column("Section", style="bold white")
     header_table.add_column("Details")
 
-    header_table.add_row("Providers", "  ".join(prov_lines[:6]))
+    header_table.add_row("Providers", "  ".join(all_prov_lines[:8]))
     header_table.add_row("MCP Servers", mcp_text)
     header_table.add_row("Projects", proj_text)
 
