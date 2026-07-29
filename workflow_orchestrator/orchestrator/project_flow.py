@@ -120,7 +120,15 @@ class ProjectFlowEngine:
             self._emit_event("session.created", {"session_id": session.session_id})
 
             # Step 2: Invoke Builder pipeline & Real Parallel Desktop Worker Task Queue
-            target = Path(workspace_dir) if workspace_dir else Path.cwd()
+            if workspace_dir:
+                target = Path(workspace_dir).expanduser().resolve()
+            else:
+                from workflow_orchestrator.config.config_manager import ConfigurationManager
+                output_root = ConfigurationManager().get_project_output_root()
+                folder_name = project_name or f"project_{int(time.time())}"
+                target = output_root / folder_name
+
+            target.mkdir(parents=True, exist_ok=True)
             config = BuilderConfig(project_root=target)
 
             build_result: Dict[str, Any] = self.builder.build(

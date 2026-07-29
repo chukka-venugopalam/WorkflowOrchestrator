@@ -20,7 +20,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Optional
 
-from workflow_orchestrator.builder.data_models import ProjectType
+from workflow_orchestrator.builder.data_models import ProjectScale, ProjectType
 from workflow_orchestrator.core.event_bus import Event, EventBus
 
 logger = logging.getLogger(__name__)
@@ -31,11 +31,6 @@ class ArchitectureGenerator:
 
     Produces a complete architecture document with folder structure,
     technology recommendations, service boundaries, and data flow.
-
-    Usage:
-        >>> generator = ArchitectureGenerator()
-        >>> arch = generator.generate(requirements, ProjectType.WEB)
-        >>> print(arch["folder_structure"])
     """
 
     # Architecture templates for each project type
@@ -50,51 +45,31 @@ class ArchitectureGenerator:
             "  styles/",
             "  hooks/",
             "  types/",
-            "  middleware/",
             "public/",
             "tests/",
             "  unit/",
             "  integration/",
-            "  e2e/",
             "scripts/",
             "config/",
             "docs/",
-            "docker/",
         ],
         "mobile": [
             "app/",
             "  screens/",
             "  components/",
-            "  navigation/",
             "  services/",
-            "  store/",
-            "  utils/",
             "  assets/",
-            "  styles/",
-            "  hooks/",
-            "  types/",
             "ios/",
             "android/",
             "tests/",
-            "  unit/",
-            "  integration/",
-            "scripts/",
             "docs/",
         ],
         "cli": [
             "cli/",
             "  commands/",
             "  utils/",
-            "  config/",
-            "  output/",
             "lib/",
-            "  core/",
-            "  services/",
-            "  models/",
             "tests/",
-            "  unit/",
-            "  integration/",
-            "scripts/",
             "docs/",
         ],
         "ai": [
@@ -102,24 +77,105 @@ class ArchitectureGenerator:
             "  api/",
             "  agents/",
             "  tools/",
-            "  memory/",
-            "  config/",
             "models/",
-            "  prompts/",
-            "  chains/",
-            "  embeddings/",
-            "services/",
-            "  llm/",
-            "  vector_store/",
-            "  monitoring/",
-            "data/",
-            "  knowledge/",
-            "  context/",
             "tests/",
-            "  unit/",
-            "  integration/",
-            "scripts/",
             "docs/",
+        ],
+        "ml": [
+            "src/",
+            "  data/",
+            "  models/",
+            "  features/",
+            "notebooks/",
+            "tests/",
+            "docs/",
+        ],
+        "game": [
+            "src/",
+            "  entities/",
+            "  scenes/",
+            "  systems/",
+            "assets/",
+            "  sprites/",
+            "  audio/",
+            "tests/",
+            "docs/",
+        ],
+        "desktop": [
+            "src/",
+            "  ui/",
+            "  core/",
+            "assets/",
+            "packaging/",
+            "tests/",
+            "docs/",
+        ],
+        "api": [
+            "app/",
+            "  api/",
+            "  core/",
+            "  models/",
+            "  services/",
+            "tests/",
+            "docs/",
+        ],
+        "library": [
+            "src/",
+            "tests/",
+            "examples/",
+            "docs/",
+        ],
+        "embedded": [
+            "firmware/",
+            "src/",
+            "include/",
+            "drivers/",
+            "tests/",
+        ],
+        "robotics": [
+            "nodes/",
+            "launch/",
+            "config/",
+            "src/",
+            "tests/",
+        ],
+        "research": [
+            "experiments/",
+            "data/",
+            "src/",
+            "results/",
+            "docs/",
+        ],
+        "education": [
+            "lessons/",
+            "exercises/",
+            "src/",
+            "tests/",
+        ],
+        "enterprise": [
+            "services/",
+            "modules/",
+            "common/",
+            "infra/",
+            "tests/",
+        ],
+        "infrastructure": [
+            "terraform/",
+            "kubernetes/",
+            "scripts/",
+            "tests/",
+        ],
+        "hybrid": [
+            "apps/",
+            "services/",
+            "shared/",
+            "tests/",
+        ],
+        "generic": [
+            "src/",
+            "tests/",
+            "docs/",
+            "config/",
         ],
     }
 
@@ -139,12 +195,14 @@ class ArchitectureGenerator:
         self,
         requirements: dict[str, Any],
         project_type: ProjectType | str = ProjectType.UNKNOWN,
+        project_scale: ProjectScale | str = ProjectScale.STANDARD,
     ) -> dict[str, Any]:
         """Generate a complete architecture specification.
 
         Args:
             requirements: Structured requirements from RequirementExtractor.
             project_type: The classified project type.
+            project_scale: The classified project scale/complexity.
 
         Returns:
             Dict with architecture specification keys.
@@ -155,275 +213,289 @@ class ArchitectureGenerator:
             except ValueError:
                 project_type = ProjectType.UNKNOWN
 
-        type_str = project_type.value if isinstance(project_type, ProjectType) else project_type
+        if isinstance(project_scale, str):
+            try:
+                project_scale = ProjectScale(project_scale)
+            except ValueError:
+                project_scale = ProjectScale.STANDARD
+
+        type_str = project_type.value if isinstance(project_type, ProjectType) else str(project_type)
+        scale_str = project_scale.value if isinstance(project_scale, ProjectScale) else str(project_scale)
 
         architecture: dict[str, Any] = {
-            "system_architecture": self._generate_system_architecture(type_str),
-            "folder_structure": self._generate_folder_structure(type_str),
-            "technology_stack": self._generate_tech_stack(type_str, requirements),
-            "services": self._generate_services(type_str, requirements),
-            "database": self._generate_database(type_str),
-            "deployment": self._generate_deployment(type_str),
+            "project_type": type_str,
+            "project_scale": scale_str,
+            "system_architecture": self._generate_system_architecture(type_str, project_scale),
+            "folder_structure": self._generate_folder_structure(type_str, project_scale),
+            "technology_stack": self._generate_tech_stack(type_str, requirements, project_scale),
+            "services": self._generate_services(type_str, requirements, project_scale),
+            "database": self._generate_database(type_str, project_scale),
+            "deployment": self._generate_deployment(type_str, project_scale),
             "external_integrations": self._generate_integrations(requirements),
-            "interfaces": self._generate_interfaces(type_str),
-            "dependencies": self._generate_dependencies(type_str),
-            "communication_flow": self._generate_communication_flow(type_str),
+            "interfaces": self._generate_interfaces(type_str, project_scale),
+            "dependencies": self._generate_dependencies(type_str, project_scale),
+            "communication_flow": self._generate_communication_flow(type_str, project_scale),
         }
 
         self._publish_event("builder.architecture_generated", {
             "project_type": type_str,
+            "project_scale": scale_str,
             "folder_count": len(architecture["folder_structure"]),
             "service_count": len(architecture["services"]),
         })
 
-        logger.info("Generated architecture for project type '%s'", type_str)
+        logger.info("Generated architecture for project type '%s' / scale '%s'", type_str, scale_str)
         return architecture
 
-    def _generate_system_architecture(self, project_type: str) -> str:
-        """Generate system architecture description.
+    def _generate_system_architecture(self, project_type: str, project_scale: ProjectScale) -> str:
+        """Generate system architecture description."""
+        if project_scale == ProjectScale.MINIMAL:
+            return (
+                f"Minimal, standalone single-package architecture for a {project_type} project.\n"
+                "Focuses on core functionality in a clean, flat layout without multi-service overhead."
+            )
 
-        Args:
-            project_type: The project type.
-
-        Returns:
-            Architecture description string.
-        """
         if project_type in ("web", "api"):
             return (
                 "Layered architecture with presentation layer (UI components),\n"
-                "application layer (services, controllers), domain layer (business logic),\n"
-                "and infrastructure layer (database, external services).\n"
-                "API gateway handles routing, authentication, and rate limiting.\n"
-                "Frontend communicates with backend via RESTful API or GraphQL."
+                "application layer (services, controllers), and domain layer.\n"
+                "Communicates via HTTP RESTful or GraphQL endpoints."
             )
-        elif project_type in ("mobile",):
+        elif project_type in ("game",):
+            if project_scale == ProjectScale.LARGE:
+                return (
+                    "Client-server multiplayer game architecture with state synchronization,\n"
+                    "matchmaking service, real-time networking (WebSockets/UDP), and leaderboard DB."
+                )
             return (
-                "Clean Architecture with presentation layer (screens, widgets),\n"
-                "domain layer (use cases, entities), and data layer (repositories, data sources).\n"
-                "State management via BLoC/Provider pattern.\n"
-                "Network layer with API client, caching, and offline support."
+                "Modular game architecture with scene management, entity-component-system (ECS),\n"
+                "input handling, rendering pipeline, and local asset storage."
+            )
+        elif project_type in ("mobile", "desktop"):
+            return (
+                "Clean Architecture with UI view layer, domain state management,\n"
+                "and local data persistence."
             )
         elif project_type in ("ai", "ml"):
             return (
-                "Modular architecture with agent orchestration layer,\n"
-                "LLM integration layer, tool/plugin system, memory/persistence layer,\n"
-                "and monitoring/observability layer.\n"
-                "Vector store for semantic search and knowledge management.\n"
-                "Event-driven communication between components."
+                "Pipeline architecture with model execution layer, prompt/agent tools,\n"
+                "and data processing/vector storage."
             )
         return (
-            "Clean layered architecture with separation of concerns.\n"
-            "Core domain logic isolated from infrastructure concerns.\n"
-            "Dependency injection for testability and flexibility."
+            f"Clean modular architecture for {project_type} with separation of concerns\n"
+            "and simple component interfaces."
         )
 
-    def _generate_folder_structure(self, project_type: str) -> list[str]:
-        """Generate folder structure based on project type.
+    def _generate_folder_structure(self, project_type: str, project_scale: ProjectScale) -> list[str]:
+        """Generate folder structure based on project type and scale."""
+        if project_type == "game":
+            if project_scale == ProjectScale.MINIMAL:
+                template = ["src/", "assets/", "tests/"]
+            elif project_scale == ProjectScale.LARGE:
+                template = ["client/", "server/", "shared/", "assets/", "tests/", "docker/"]
+            else:
+                template = self._FOLDER_TEMPLATES["game"]
+        elif project_scale == ProjectScale.MINIMAL:
+            # Minimal scale uses slim template or generic
+            base_temp = self._FOLDER_TEMPLATES.get(project_type, self._FOLDER_TEMPLATES["generic"])
+            template = [f for f in base_temp if f.strip().startswith(("src/", "app/", "cli/", "assets/", "tests/"))] or ["src/", "tests/"]
+        else:
+            template = self._FOLDER_TEMPLATES.get(project_type, self._FOLDER_TEMPLATES["generic"])
 
-        Args:
-            project_type: The project type.
-
-        Returns:
-            List of folder path strings.
-        """
-        template = self._FOLDER_TEMPLATES.get(project_type, self._FOLDER_TEMPLATES.get("web", []))
-        # Always add root-level files
         root_files = [
             "README.md",
-            "CHANGELOG.md",
             "ARCHITECTURE.md",
-            "CONTRIBUTING.md",
-            "LICENSE",
             ".gitignore",
-            ".env.example",
-            "package.json" if project_type in ("web", "cli", "api") else "requirements.txt" if project_type in ("ai", "ml") else "Cargo.toml",
+            "package.json" if project_type in ("web", "cli", "api") else "requirements.txt" if project_type in ("ai", "ml", "game") else "pyproject.toml",
         ]
         return root_files + template
 
-    def _generate_tech_stack(self, project_type: str, requirements: dict[str, Any]) -> dict[str, Any]:
-        """Generate technology stack recommendations.
-
-        Args:
-            project_type: The project type.
-            requirements: The structured requirements.
-
-        Returns:
-            Dict with tech stack categories.
-        """
+    def _generate_tech_stack(self, project_type: str, requirements: dict[str, Any], project_scale: ProjectScale = ProjectScale.STANDARD) -> dict[str, Any]:
+        """Generate technology stack recommendations."""
         stacks: dict[str, dict[str, Any]] = {
             "web": {
                 "language": "TypeScript",
-                "framework": "Next.js 14+",
+                "framework": "Next.js 14+" if project_scale != ProjectScale.MINIMAL else "React / Vite",
                 "styling": "Tailwind CSS",
-                "state_management": "Zustand / React Query",
-                "database": "PostgreSQL + Prisma ORM",
-                "api": "Next.js API Routes / tRPC",
-                "testing": "Vitest + Playwright",
-                "deployment": "Vercel / Docker",
-                "ci_cd": "GitHub Actions",
+                "state_management": "Zustand",
+                "database": "PostgreSQL + Prisma ORM" if project_scale == ProjectScale.LARGE else "SQLite",
+                "api": "REST API",
+                "testing": "Vitest",
+                "deployment": "Vercel / Local",
             },
-            "mobile": {
-                "language": "Dart / TypeScript",
-                "framework": "Flutter / React Native",
-                "state_management": "Riverpod / Zustand",
-                "database": "SQLite (Drift) / Firebase",
-                "api": "REST / GraphQL",
-                "testing": "Flutter Test / Jest",
-                "deployment": "App Store / Google Play",
-                "ci_cd": "Codemagic / GitHub Actions",
+            "game": {
+                "language": "Python" if project_scale == ProjectScale.MINIMAL else "C# / TypeScript",
+                "framework": "Pygame / Arcade" if project_scale == ProjectScale.MINIMAL else "Unity / WebGL",
+                "rendering": "2D Canvas / Pygame Surface" if project_scale == ProjectScale.MINIMAL else "WebGL / OpenGL",
+                "state_management": "Local Game Engine Loop",
+                "database": "None (Local File / In-Memory)" if project_scale != ProjectScale.LARGE else "PostgreSQL (Leaderboards)",
+                "testing": "pytest",
+                "deployment": "Standalone Executable / Local Python script",
             },
             "cli": {
-                "language": "Python / Rust / TypeScript",
-                "framework": "Typer / clap / Commander",
-                "testing": "pytest / cargo test / Vitest",
-                "deployment": "PyPI / Crates.io / npm",
-                "ci_cd": "GitHub Actions",
+                "language": "Python / Rust",
+                "framework": "Typer / Click / clap",
+                "testing": "pytest",
+                "deployment": "PyPI / Local script",
+            },
+            "desktop": {
+                "language": "Python / TypeScript",
+                "framework": "PyQt / Electron / Tauri",
+                "testing": "pytest / Vitest",
+                "deployment": "PyInstaller / Native Installer",
+            },
+            "api": {
+                "language": "Python / TypeScript",
+                "framework": "FastAPI / Express",
+                "database": "SQLite" if project_scale == ProjectScale.MINIMAL else "PostgreSQL",
+                "testing": "pytest",
+                "deployment": "Local Server / Docker",
+            },
+            "library": {
+                "language": "Python / TypeScript",
+                "framework": "Standard Package Framework",
+                "testing": "pytest / Vitest",
+                "deployment": "PyPI / npm",
             },
             "ai": {
                 "language": "Python",
                 "framework": "LangChain / LlamaIndex",
-                "llm_providers": "OpenAI / Anthropic / Open Source",
-                "vector_store": "ChromaDB / Pinecone / Qdrant",
-                "database": "PostgreSQL",
-                "api": "FastAPI",
+                "llm_providers": "OpenAI / Anthropic / Local Ollama",
+                "vector_store": "ChromaDB",
                 "testing": "pytest",
-                "deployment": "Docker / Modal / Railway",
+                "deployment": "Local / Docker",
+            },
+            "ml": {
+                "language": "Python",
+                "framework": "scikit-learn / PyTorch",
+                "testing": "pytest",
+                "deployment": "Local / ONNX Runtime",
+            },
+            "generic": {
+                "language": "Python",
+                "framework": "Standard Library",
+                "testing": "pytest",
+                "deployment": "Local execution",
             },
         }
 
-        return stacks.get(project_type, stacks.get("web", {}))
+        return stacks.get(project_type, stacks["generic"])
 
-    def _generate_services(self, project_type: str, requirements: dict[str, Any]) -> list[dict[str, Any]]:
-        """Generate service definitions.
+    def _generate_services(self, project_type: str, requirements: dict[str, Any], project_scale: ProjectScale = ProjectScale.STANDARD) -> list[dict[str, Any]]:
+        """Generate service definitions."""
+        if project_scale == ProjectScale.MINIMAL or (project_type in ("game", "cli", "library") and project_scale != ProjectScale.LARGE):
+            return [
+                {"name": "Core Application Logic", "responsibility": "Handles primary features and state management", "type": "internal"},
+            ]
 
-        Args:
-            project_type: The project type.
-            requirements: The structured requirements.
-
-        Returns:
-            List of service dicts.
-        """
-        common_services = [
-            {"name": "Auth Service", "responsibility": "Authentication and authorization", "type": "internal"},
-            {"name": "API Gateway", "responsibility": "Request routing and rate limiting", "type": "internal"},
-            {"name": "Data Service", "responsibility": "Data persistence and retrieval", "type": "internal"},
-            {"name": "Cache Service", "responsibility": "In-memory caching for performance", "type": "internal"},
+        services = [
+            {"name": "Application Logic", "responsibility": "Core domain rules and state", "type": "internal"},
+            {"name": "Data Storage Service", "responsibility": "Local or remote data persistence", "type": "internal"},
         ]
 
-        if project_type in ("ai", "ml"):
-            common_services.extend([
-                {"name": "LLM Service", "responsibility": "AI model inference and prompt management", "type": "internal"},
-                {"name": "Vector Store Service", "responsibility": "Embedding storage and semantic search", "type": "internal"},
-                {"name": "Agent Service", "responsibility": "Agent orchestration and tool management", "type": "internal"},
+        if project_type in ("web", "api") or project_scale == ProjectScale.LARGE:
+            services.extend([
+                {"name": "Auth Service", "responsibility": "Authentication and authorization", "type": "internal"},
+                {"name": "API Gateway", "responsibility": "Routing and validation", "type": "internal"},
             ])
 
-        if project_type in ("web",):
-            common_services.extend([
-                {"name": "Notification Service", "responsibility": "Email, push, and in-app notifications", "type": "internal"},
-                {"name": "File Storage Service", "responsibility": "File upload and content delivery", "type": "internal"},
-            ])
+        return services
 
-        return common_services
+    def _generate_database(self, project_type: str, project_scale: ProjectScale = ProjectScale.STANDARD) -> dict[str, Any]:
+        """Generate database schema description."""
+        if project_scale == ProjectScale.MINIMAL or (project_type in ("game", "cli", "library", "desktop") and project_scale != ProjectScale.LARGE):
+            return {
+                "primary_database": "None (In-memory / Local File Storage)",
+                "cache_layer": "None",
+                "migration_tool": "None",
+                "key_entities": ["local_state", "user_config"],
+                "indexing_strategy": "Direct in-memory access",
+                "backup_strategy": "Local file save/load",
+            }
 
-    def _generate_database(self, project_type: str) -> dict[str, Any]:
-        """Generate database schema description.
-
-        Args:
-            project_type: The project type.
-
-        Returns:
-            Dict with database design details.
-        """
         return {
-            "primary_database": "PostgreSQL",
-            "cache_layer": "Redis",
-            "migration_tool": "Prisma Migrate / Alembic",
-            "key_entities": ["users", "sessions", "audit_logs"],
-            "indexing_strategy": "B-tree for primary lookups, GIN for full-text search",
-            "backup_strategy": "Daily automated backups with point-in-time recovery",
+            "primary_database": "PostgreSQL" if project_scale == ProjectScale.LARGE else "SQLite",
+            "cache_layer": "Redis" if project_scale == ProjectScale.LARGE else "In-memory LRU",
+            "migration_tool": "Alembic / Prisma Migrate",
+            "key_entities": ["users", "sessions", "data_records"],
+            "indexing_strategy": "B-tree for primary lookups",
+            "backup_strategy": "Automated backups",
         }
 
-    def _generate_deployment(self, project_type: str) -> dict[str, Any]:
-        """Generate deployment architecture.
+    def _generate_deployment(self, project_type: str, project_scale: ProjectScale = ProjectScale.STANDARD) -> dict[str, Any]:
+        """Generate deployment architecture."""
+        if project_scale == ProjectScale.MINIMAL or project_type in ("game", "cli", "library"):
+            return {
+                "hosting": "Local execution / Standalone binary",
+                "containerization": "None required",
+                "orchestration": "None",
+                "ci_cd": "GitHub Actions",
+                "monitoring": "Console logging / Local metrics",
+                "rollback_strategy": "Git version control reset",
+                "scaling": "Single process execution",
+            }
 
-        Args:
-            project_type: The project type.
-
-        Returns:
-            Dict with deployment details.
-        """
         return {
-            "hosting": "Cloud provider (AWS/GCP/Azure) or Vercel/Railway",
-            "containerization": "Docker with docker-compose for local dev",
-            "orchestration": "Docker Compose / Kubernetes for production",
-            "ci_cd": "GitHub Actions with automated testing and deployment",
-            "monitoring": "Application monitoring with health checks and logging",
-            "rollback_strategy": "Blue-green deployment with automated rollback",
-            "scaling": "Horizontal scaling with load balancer",
+            "hosting": "Cloud provider (AWS/GCP/Vercel)",
+            "containerization": "Docker",
+            "orchestration": "Docker Compose / Kubernetes" if project_scale == ProjectScale.LARGE else "Docker Compose",
+            "ci_cd": "GitHub Actions",
+            "monitoring": "Application logging and health checks",
+            "rollback_strategy": "Automated rollback on deployment failure",
+            "scaling": "Horizontal scaling" if project_scale == ProjectScale.LARGE else "Vertical scaling",
         }
 
     def _generate_integrations(self, requirements: dict[str, Any]) -> list[dict[str, Any]]:
-        """Generate external integration descriptions.
-
-        Args:
-            requirements: The structured requirements.
-
-        Returns:
-            List of integration dicts.
-        """
+        """Generate external integration descriptions."""
         return [
-            {"name": "GitHub", "purpose": "Version control and CI/CD", "type": "development"},
-            {"name": "Cloud Provider", "purpose": "Hosting and infrastructure", "type": "production"},
-            {"name": "Email Service", "purpose": "Transactional emails and notifications", "type": "production"},
+            {"name": "Git", "purpose": "Version control", "type": "development"},
         ]
 
-    def _generate_interfaces(self, project_type: str) -> list[dict[str, Any]]:
-        """Generate interface definitions.
-
-        Args:
-            project_type: The project type.
-
-        Returns:
-            List of interface dicts.
-        """
+    def _generate_interfaces(self, project_type: str, project_scale: ProjectScale = ProjectScale.STANDARD) -> list[dict[str, Any]]:
+        """Generate interface definitions."""
+        if project_type == "game":
+            return [
+                {"name": "Input Event Interface", "description": "Keyboard/mouse/gamepad event handlers", "protocol": "Event Loop"},
+                {"name": "Render Interface", "description": "2D/3D graphics rendering pipeline", "protocol": "Canvas/GPU API"},
+            ]
+        elif project_type == "cli":
+            return [
+                {"name": "CLI Argument Parser", "description": "Command line flag and argument parsing", "protocol": "POSIX Standard"},
+                {"name": "Terminal Output Interface", "description": "Formatted console output", "protocol": "ANSI / STDOUT"},
+            ]
         return [
-            {"name": "REST API", "description": "HTTP API for client-server communication", "protocol": "HTTP/JSON"},
-            {"name": "WebSocket", "description": "Real-time bidirectional communication", "protocol": "WebSocket"},
-            {"name": "Database Interface", "description": "Repository pattern for data access", "protocol": "SQL/ORM"},
+            {"name": "Application API", "description": "Core interface for component communication", "protocol": "Function calls / HTTP"},
         ]
 
-    def _generate_dependencies(self, project_type: str) -> list[dict[str, Any]]:
-        """Generate dependency list.
-
-        Args:
-            project_type: The project type.
-
-        Returns:
-            List of dependency dicts.
-        """
+    def _generate_dependencies(self, project_type: str, project_scale: ProjectScale = ProjectScale.STANDARD) -> list[dict[str, Any]]:
+        """Generate dependency list."""
+        if project_type == "game":
+            return [
+                {"name": "Game Engine / GUI Framework", "description": "Pygame / Arcade / Canvas engine"},
+                {"name": "Testing Framework", "description": "pytest unit testing framework"},
+            ]
+        elif project_type == "cli":
+            return [
+                {"name": "CLI Library", "description": "Typer / Click / Argparse"},
+                {"name": "Testing Framework", "description": "pytest"},
+            ]
         return [
-            {"name": "Runtime", "description": "Language runtime (Node.js / Python / etc.)"},
-            {"name": "Web Framework", "description": "Core web framework"},
-            {"name": "Database Driver", "description": "Database connectivity"},
-            {"name": "Testing Framework", "description": "Unit and integration testing"},
-            {"name": "Linting/Formatting", "description": "Code quality tools"},
+            {"name": "Runtime", "description": "Python / Node.js runtime"},
+            {"name": "Testing Framework", "description": "pytest / Vitest"},
         ]
 
-    def _generate_communication_flow(self, project_type: str) -> str:
-        """Generate communication flow description.
-
-        Args:
-            project_type: The project type.
-
-        Returns:
-            Communication flow description.
-        """
+    def _generate_communication_flow(self, project_type: str, project_scale: ProjectScale = ProjectScale.STANDARD) -> str:
+        """Generate communication flow description."""
+        if project_type == "game":
+            return (
+                "User Input → Event Handler → Game Engine Loop → Entity/State Update → Render Pipeline"
+            )
+        elif project_type == "cli":
+            return (
+                "Terminal Invocation → Command Parser → Controller Function → Service Logic → Output Formatter"
+            )
         return (
-            "Client → API Gateway → Service Layer → Data Layer\n"
-            "Synchronous: HTTP REST/gRPC for request-response patterns\n"
-            "Asynchronous: Message queue for event-driven communication\n"
-            "Caching: Redis cache between service and data layers\n"
-            "Monitoring: Centralized logging and metrics collection"
+            "Client Input → Application Controller → Service Layer → Data Storage"
         )
 
     # ------------------------------------------------------------------

@@ -49,6 +49,7 @@ class AppConfig:
 
     # Project
     default_project_directory: str = ""
+    project_output_root: str = ""
 
     # URLs
     github_repository_url: str = ""
@@ -348,6 +349,16 @@ class ConfigurationManager:
         self._cache.clear()
         self._config = self._load()
         logger.info("Configuration reloaded")
+
+    def get_project_output_root(self) -> Path:
+        """Get default project output root directory (defaults to Desktop or Home)."""
+        val = self.get("project_output_root", "")
+        if val and str(val).strip():
+            return Path(val).expanduser().resolve()
+        desktop = Path.home() / "Desktop"
+        if desktop.exists():
+            return desktop
+        return Path.home()
 
     # ------------------------------------------------------------------
     # Profile management

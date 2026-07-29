@@ -117,12 +117,35 @@ def handle_create_project(orchestrator: Orchestrator) -> None:
     name = Prompt.ask("[bold yellow]Project name (optional, press Enter to auto-generate)[/]", default="")
     name_val = name.strip() if name.strip() else None
 
+    # Resolve project folder name & output directory
+    clean_idea = re.sub(r'[^a-zA-Z0-9_-]', '_', idea[:25].strip().lower()).strip('_')
+    folder_name = name_val if name_val else (clean_idea or f"project_{int(time.time())}")
+
+    config_mgr = ConfigurationManager()
+    output_root = config_mgr.get_project_output_root()
+    default_target = output_root / folder_name
+
+    console.print(f"\nProject will be created at: [cyan]{default_target}[/]")
+    override = Prompt.ask("Press Enter to accept, or type a different folder", default="")
+    resolved_path = Path(override.strip()).expanduser().resolve() if override.strip() else default_target
+
+    try:
+        resolved_path.mkdir(parents=True, exist_ok=True)
+    except Exception as exc:
+        console.print(f"\n[bold red]Error: Cannot create project directory at '{resolved_path}': {exc}[/]")
+        return
+
     console.print("\n[bold green]Launching AI Operating System Project Pipeline...[/]")
     console.print("[dim white]Note: Project build pipeline is active. Real-time task progress will be logged below (pipeline timeout: 10 minutes)...[/]\n")
-    rec = orchestrator.create_project(idea=idea, project_name=name_val)
+
+    rec = orchestrator.create_project(
+        idea=idea,
+        project_name=name_val or folder_name,
+        workspace_dir=resolved_path,
+    )
 
     if rec.status == "completed":
-        console.print(f"\n[bold green]✓ Project '{rec.project_name}' created and built successfully in {rec.duration_seconds:.1f}s![/]")
+        console.print(f"\n[bold green]✓ Project '{rec.project_name}' created and built successfully at {resolved_path} in {rec.duration_seconds:.1f}s![/]")
     else:
         console.print(f"\n[bold red]✗ Project build failed:[/] {rec.error}")
 
@@ -241,9 +264,17 @@ def handle_deployments(orchestrator: Orchestrator) -> None:
 
 def handle_settings(orchestrator: Orchestrator) -> None:
     """Option 11: Application Settings."""
-    cm = orchestrator.kernel.get_service("config_manager") if orchestrator.kernel.registry.has_service("config_manager") else None
-    if cm:
-        console.print(f"\n[bold cyan]Active Configuration Profile:[/] {cm.active_profile}")
+    cm = ConfigurationManager()
+    output_root = cm.get_project_output_root()
+    console.print(f"\n[bold cyan]Active Configuration Profile:[/] {cm.config.active_profile}")
+    console.print(f"[bold cyan]Project Output Root:[/] {output_root}")
+
+    if Confirm.ask("\nChange Project Output Root directory?", default=False):
+        new_dir = Prompt.ask("Enter new default output folder path")
+        if new_dir and new_dir.strip():
+            resolved = Path(new_dir.strip()).expanduser().resolve()
+            cm.set("project_output_root", str(resolved))
+            console.print(f"[bold green]Updated project output root to: {resolved}[/]")
 
 
 def handle_diagnostics(orchestrator: Orchestrator) -> None:

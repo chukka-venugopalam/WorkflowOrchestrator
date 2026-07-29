@@ -28,6 +28,7 @@ class ConfigDefaults:
 
     # Project
     default_project_directory: str = ""
+    project_output_root: str = ""
 
     # URLs
     github_repository_url: str = ""
@@ -74,6 +75,7 @@ KNOWN_CONFIG_KEYS: dict[str, type] = {
     "browser_executable": str,
     "vscode_executable_path": str,
     "default_project_directory": str,
+    "project_output_root": str,
     "github_repository_url": str,
     "render_dashboard_url": str,
     "vercel_dashboard_url": str,

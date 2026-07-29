@@ -39,6 +39,14 @@ class ProjectType(Enum):
     UNKNOWN = "unknown"
 
 
+class ProjectScale(str, Enum):
+    """Scale/complexity tier of a project."""
+
+    MINIMAL = "minimal"
+    STANDARD = "standard"
+    LARGE = "large"
+
+
 class ProjectPhase(Enum):
     """Phase of the project lifecycle."""
 

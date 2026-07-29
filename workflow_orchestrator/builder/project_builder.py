@@ -211,6 +211,14 @@ class ProjectBuilder:
         except Exception:
             return None
 
+    def _resolve_provider_manager(self) -> Any:
+        """Resolve ProviderManager from Orchestrator singleton if available."""
+        try:
+            from workflow_orchestrator.orchestrator.orchestrator import Orchestrator
+            return Orchestrator.get_instance().provider_manager
+        except Exception:
+            return None
+
     # ------------------------------------------------------------------
     # Main build entry point
     # ------------------------------------------------------------------
@@ -266,7 +274,10 @@ class ProjectBuilder:
 
             # Phase 2: Classify
             self._state_mgr.transition_to("classifying")
-            project_type = self._classifier.classify(idea, name)
+            provider_mgr = self._resolve_provider_manager()
+            project_type, project_scale = self._classifier.classify_with_disambiguation(
+                idea, name, provider_manager=provider_mgr,
+            )
             self._project_state.project_type = project_type.value
 
             # Phase 3: Requirements
@@ -275,7 +286,13 @@ class ProjectBuilder:
 
             # Phase 4: Architecture
             self._state_mgr.transition_to("architecture")
-            self._architecture = self._arch_gen.generate(self._requirements, project_type)
+            self._architecture = self._arch_gen.generate(
+                self._requirements, project_type, project_scale=project_scale,
+            )
+            project_root = self._resolve_project_root(name)
+            self._scaffold_project_files(
+                project_root, self._architecture.get("folder_structure", []), name, idea,
+            )
 
             # Phase 5: Roadmap
             self._state_mgr.transition_to("planning")
@@ -416,7 +433,39 @@ class ProjectBuilder:
         if not project_root.is_absolute():
             project_root = Path.cwd() / project_root
 
+        if project_root.name.lower() == safe_name or not safe_name:
+            return project_root
+
         return project_root / safe_name
+
+    def _scaffold_project_files(
+        self,
+        project_root: Path,
+        folder_structure: list[str],
+        name: str,
+        idea: str,
+    ) -> None:
+        """Create directories and placeholder root files from the architecture specification."""
+        try:
+            project_root.mkdir(parents=True, exist_ok=True)
+            for item in folder_structure:
+                item_str = item.strip()
+                if item_str.endswith("/"):
+                    (project_root / item_str).mkdir(parents=True, exist_ok=True)
+                else:
+                    file_path = project_root / item_str
+                    file_path.parent.mkdir(parents=True, exist_ok=True)
+                    if not file_path.exists():
+                        if file_path.name == "README.md":
+                            file_path.write_text(f"# {name}\n\n{idea}\n", encoding="utf-8")
+                        elif file_path.name == "ARCHITECTURE.md":
+                            file_path.write_text(f"# Architecture — {name}\n\nProject Architecture Specification.\n", encoding="utf-8")
+                        elif file_path.name == ".gitignore":
+                            file_path.write_text("__pycache__/\n*.pyc\nnode_modules/\n.env\n", encoding="utf-8")
+                        else:
+                            file_path.write_text(f"# {file_path.name}\n", encoding="utf-8")
+        except Exception as exc:
+            logger.warning("Failed to scaffold project files: %s", exc)
 
     # ------------------------------------------------------------------
     # Execution
