@@ -11,6 +11,8 @@ from workflow_orchestrator.workers.implementations.copilot_worker import Copilot
 from workflow_orchestrator.workers.implementations.opencode_worker import OpenCodeDesktopWorker
 from workflow_orchestrator.workers.implementations.ollama_worker import OllamaDesktopWorker
 from workflow_orchestrator.workers.implementations.optional_web_worker import OptionalWebDesktopWorker
+from workflow_orchestrator.workers.implementations.antigravity_worker import AntigravityDesktopWorker
+from workflow_orchestrator.workers.implementations.freebuff_worker import FreeBuffDesktopWorker
 
 __all__ = [
     "ClaudeCodeDesktopWorker",
@@ -19,4 +21,6 @@ __all__ = [
     "OpenCodeDesktopWorker",
     "OllamaDesktopWorker",
     "OptionalWebDesktopWorker",
+    "AntigravityDesktopWorker",
+    "FreeBuffDesktopWorker",
 ]

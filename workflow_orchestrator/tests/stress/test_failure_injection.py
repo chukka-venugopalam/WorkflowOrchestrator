@@ -195,10 +195,11 @@ class TestFailureInjectionSuite:
         assert res is not None
 
     @pytest.mark.asyncio
-    async def test_scenario_20_agent_manager_recovery(self):
+    async def test_scenario_20_worker_registry_recovery(self):
         orch = Orchestrator.get_instance()
-        agents = orch.agent_manager.discover_agents()
-        assert len(agents) > 0
+        orch.worker_registry.discover_and_start_all()
+        workers = orch.worker_registry.list_workers()
+        assert len(workers) > 0
 
     # -----------------------------------------------------------------------
     # Scenarios 21 - 30: Security & Approval Gate Interceptions

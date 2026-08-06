@@ -93,10 +93,9 @@ class TelemetryTracer:
     def generate_dependency_graph(self) -> Dict[str, List[str]]:
         """Generate graph of active system dependencies."""
         return {
-            "MasterOrchestrator": ["Kernel", "ServiceRegistry", "ProviderManager", "AgentManager", "MCPManager"],
+            "MasterOrchestrator": ["Kernel", "ServiceRegistry", "ProviderManager", "MCPManager"],
             "Kernel": ["ServiceRegistry", "EventBus", "PluginEngine"],
             "ProviderManager": ["ProviderRegistry", "ProviderRuntime", "CredentialManager"],
-            "AgentManager": ["AgentRegistry", "AgentRuntime"],
             "ProjectFlowEngine": ["ProjectBuilder", "DecisionEngine", "ContextEngine", "WorkflowEngine"],
             "WorkflowEngine": ["ExecutionEngine", "CliCommandTransport", "StateEngine"],
         }

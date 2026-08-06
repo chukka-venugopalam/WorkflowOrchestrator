@@ -103,13 +103,11 @@ class ProviderManager:
         provider_config: Optional[ProviderConfiguration] = None,
         credential_manager: Optional[CredentialManager] = None,
         provider_runtime: Optional[ProviderRuntime] = None,
-        event_bus: Optional[Any] = None,
     ) -> None:
         self.detector = provider_detector or ProviderDetector()
         self.config_mgr = provider_config or ProviderConfiguration()
         self.cred_mgr = credential_manager or CredentialManager()
         self.runtime = provider_runtime or ProviderRuntime()
-        self.event_bus = event_bus
 
     def discover_and_load(self) -> List[ProviderMetadata]:
         """Discover installed providers and load their current status."""

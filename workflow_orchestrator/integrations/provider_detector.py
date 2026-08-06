@@ -210,8 +210,8 @@ class ProviderDetector:
             except Exception:
                 pass
             return DetectedProvider(
-                provider_id="anthropic.claude",
-                name="Claude Code",
+                provider_id="anthropic.claude_code",
+                name="Claude Code CLI",
                 version=version or "detected",
                 transport="cli",
                 path=str(claude_path),
@@ -220,8 +220,8 @@ class ProviderDetector:
                 unavailable_reason="",
             )
         return DetectedProvider(
-            provider_id="anthropic.claude",
-            name="Claude Code",
+            provider_id="anthropic.claude_code",
+            name="Claude Code CLI",
             available=False,
             unavailable_reason="'claude' executable not found on PATH or %APPDATA%\\npm",
         )
@@ -230,6 +230,8 @@ class ProviderDetector:
         """Detect ChatGPT Desktop application."""
         # 1. Check running process
         running, proc_msg = self._is_process_running("chatgpt")
+        if not running:
+            running, proc_msg = self._is_process_running("openai")
         if running:
             return DetectedProvider(
                 provider_id="openai.chatgpt",
@@ -242,7 +244,23 @@ class ProviderDetector:
                 unavailable_reason="",
             )
 
-        # 2. Check filesystem paths
+        # 2. Check Windows Store App Packages
+        pkgs_dir = Path(os.environ.get("LOCALAPPDATA", "")) / "Packages"
+        if pkgs_dir.exists():
+            for pkg in pkgs_dir.glob("*ChatGPT*"):
+                if pkg.exists():
+                    return DetectedProvider(
+                        provider_id="openai.chatgpt",
+                        name="ChatGPT Desktop",
+                        version="detected",
+                        transport="desktop",
+                        path=str(pkg),
+                        detected_from="Windows App Package",
+                        available=True,
+                        unavailable_reason="",
+                    )
+
+        # 3. Check filesystem paths
         mac_path = Path("/Applications/ChatGPT.app")
         if mac_path.exists():
             return DetectedProvider(
@@ -411,7 +429,23 @@ class ProviderDetector:
         )
 
     def _detect_copilot(self) -> DetectedProvider:
-        """Detect GitHub Copilot extension across VS Code, VS Code Insiders, and Cursor."""
+        """Detect GitHub / Windows Copilot desktop application or VS Code extension."""
+        # 1. Check running process
+        for c_proc in ["mscopilot", "copilot"]:
+            running, proc_msg = self._is_process_running(c_proc)
+            if running:
+                return DetectedProvider(
+                    provider_id="github.copilot",
+                    name="GitHub Copilot",
+                    version="detected",
+                    transport="desktop",
+                    path=proc_msg,
+                    detected_from=proc_msg,
+                    available=True,
+                    unavailable_reason="",
+                )
+
+        # 2. Check extension directories
         ext_dirs = [
             Path.home() / ".vscode" / "extensions",
             Path.home() / ".vscode-insiders" / "extensions",
@@ -435,7 +469,7 @@ class ProviderDetector:
             provider_id="github.copilot",
             name="GitHub Copilot",
             available=False,
-            unavailable_reason="Extension directories (.vscode, .vscode-insiders, .cursor) have no github.copilot-* entry",
+            unavailable_reason="Copilot process or extension directories (.vscode, .vscode-insiders, .cursor) not detected",
         )
 
     def _detect_continue(self) -> DetectedProvider:

@@ -28,8 +28,8 @@ from typing import Any, Dict, List, Optional
 from workflow_orchestrator.integrations.health_monitor import HealthMonitor, HealthReport, HealthCheck, HealthStatus
 from workflow_orchestrator.orchestrator.discovery import AutoDiscovery
 from workflow_orchestrator.orchestrator.provider_manager import ProviderManager
-from workflow_orchestrator.orchestrator.agent_manager import AgentManager
 from workflow_orchestrator.orchestrator.mcp_manager import MCPManager
+from workflow_orchestrator.workers.worker_registry import DesktopWorkerRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -67,13 +67,13 @@ class WorkflowDoctor:
         health_monitor: Optional[HealthMonitor] = None,
         discovery: Optional[AutoDiscovery] = None,
         provider_manager: Optional[ProviderManager] = None,
-        agent_manager: Optional[AgentManager] = None,
+        worker_registry: Optional[DesktopWorkerRegistry] = None,
         mcp_manager: Optional[MCPManager] = None,
     ) -> None:
         self.health_monitor = health_monitor or HealthMonitor()
         self.discovery = discovery or AutoDiscovery()
         self.provider_mgr = provider_manager or ProviderManager()
-        self.agent_mgr = agent_manager or AgentManager()
+        self.worker_registry = worker_registry or DesktopWorkerRegistry()
         self.mcp_mgr = mcp_manager or MCPManager()
 
     def diagnose(self) -> DiagnosticReport:
@@ -104,10 +104,11 @@ class WorkflowDoctor:
         else:
             items.append(DiagnosticItem("Providers", "Execution Mode", "OK", "All registered providers configured for REAL_API execution", None))
 
-        # 4. Agents
-        agents = self.agent_mgr.discover_agents()
-        installed_agents = [a for a in agents if a.installed]
-        items.append(DiagnosticItem("Agents", "Installed AI Agents", "OK" if installed_agents else "INFO", f"{len(installed_agents)} agent(s) detected: {', '.join(a.name for a in installed_agents) if installed_agents else 'None'}", None))
+        # 4. Workers
+        self.worker_registry.discover_and_start_all()
+        workers = self.worker_registry.list_workers()
+        active_workers = [w for w in workers if getattr(w.state, "name", str(w.state)) != "OFFLINE"]
+        items.append(DiagnosticItem("Workers", "Desktop Workers", "OK" if active_workers else "INFO", f"{len(active_workers)} active desktop worker(s) out of {len(workers)} total", None))
 
         # 5. MCP Servers
         mcp_servers = self.mcp_mgr.discover_and_list()

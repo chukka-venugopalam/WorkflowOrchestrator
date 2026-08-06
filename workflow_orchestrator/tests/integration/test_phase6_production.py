@@ -29,11 +29,12 @@ class TestPhase6ProductionIntegration:
         provider_ids = [p.provider_id for p in providers]
         assert "openrouter" in provider_ids or any("openrouter" in p.name.lower() for p in providers)
 
-    def test_agent_manager_with_new_agents(self):
+    def test_worker_registry_with_new_workers(self):
         orch = Orchestrator.get_instance()
-        agents = orch.agent_manager.discover_agents()
-        agent_ids = [a.agent_id for a in agents]
-        assert len(agents) >= 4
+        orch.worker_registry.discover_and_start_all()
+        workers = orch.worker_registry.list_workers()
+        worker_ids = [w.worker_id for w in workers]
+        assert len(workers) >= 4
 
     def test_workflow_replay_integration(self):
         orch = Orchestrator.get_instance()

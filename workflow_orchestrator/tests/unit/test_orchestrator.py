@@ -10,7 +10,6 @@ from workflow_orchestrator.orchestrator import (
     BootSequence,
     ProviderManager,
     TransportManager,
-    AgentManager,
     MCPManager,
     AutoDiscovery,
     WorkflowDoctor,
@@ -63,14 +62,19 @@ class TestTransportManager:
         assert "cli" in names
 
 
-class TestAgentManager:
-    def test_discover_agents(self) -> None:
-        am = AgentManager()
-        agents = am.discover_agents()
-        assert len(agents) >= 7
-        agent_ids = [a.agent_id for a in agents]
-        assert "claude_code" in agent_ids
-        assert "cursor" in agent_ids
+class TestWorkerRegistry:
+    def test_discover_workers(self) -> None:
+        from workflow_orchestrator.workers.worker_registry import DesktopWorkerRegistry
+        from workflow_orchestrator.workers.implementations import CursorDesktopWorker, AntigravityDesktopWorker
+        wr = DesktopWorkerRegistry()
+        wr.register_worker(CursorDesktopWorker())
+        wr.register_worker(AntigravityDesktopWorker())
+        wr.discover_and_start_all()
+        workers = wr.list_workers()
+        assert len(workers) >= 2
+        worker_ids = [w.worker_id for w in workers]
+        assert "cursor_desktop" in worker_ids
+        assert "antigravity_desktop" in worker_ids
 
 
 class TestMCPManager:

@@ -76,11 +76,14 @@ class ProviderRuntime:
         Returns:
             Dict mapping provider ID to initialization success.
         """
+        if self._provider_registry_runtime is None:
+            return {}
         return await self._provider_registry_runtime.initialize_all()
 
     async def shutdown_all(self) -> None:
         """Shut down all providers gracefully."""
-        await self._provider_registry_runtime.shutdown_all()
+        if self._provider_registry_runtime is not None:
+            await self._provider_registry_runtime.shutdown_all()
 
     async def connect(self, provider_id: str) -> bool:
         """Connect to a specific provider.
@@ -91,6 +94,8 @@ class ProviderRuntime:
         Returns:
             True if connected successfully.
         """
+        if self._provider_registry_runtime is None:
+            return False
         success = await self._provider_registry_runtime.connect(provider_id)
         if success:
             self._publish_event("provider.connected", {"provider_id": provider_id})
@@ -107,6 +112,8 @@ class ProviderRuntime:
         Returns:
             True if disconnected successfully.
         """
+        if self._provider_registry_runtime is None:
+            return False
         success = await self._provider_registry_runtime.disconnect(provider_id)
         if success:
             self._publish_event("provider.disconnected", {"provider_id": provider_id})
@@ -121,6 +128,8 @@ class ProviderRuntime:
         Returns:
             ProviderHealth status.
         """
+        if self._provider_registry_runtime is None:
+            return None
         return await self._provider_registry_runtime.check_health(provider_id)
 
     async def health_all(self) -> dict[str, ProviderHealth]:
@@ -129,6 +138,8 @@ class ProviderRuntime:
         Returns:
             Dict mapping provider ID to health status.
         """
+        if self._provider_registry_runtime is None:
+            return {}
         return await self._provider_registry_runtime.check_all_health()
 
     def status(self, provider_id: str) -> ProviderStatus:
@@ -140,6 +151,8 @@ class ProviderRuntime:
         Returns:
             Current provider status.
         """
+        if self._provider_registry_runtime is None:
+            return ProviderStatus.UNAVAILABLE
         return self._provider_registry_runtime.status(provider_id)
 
     # ------------------------------------------------------------------
@@ -173,6 +186,14 @@ class ProviderRuntime:
             ExecutionResult with output and artifacts.
         """
         # Resolve provider
+        if self._provider_registry_runtime is None or not hasattr(self._provider_registry_runtime, "registry"):
+            self._publish_event("provider.not_found", {"provider_id": provider_id})
+            return ExecutionResult(
+                task_id=request.task_id,
+                success=False,
+                error_message=f"Provider '{provider_id}' not found",
+            )
+        
         provider = self._provider_registry_runtime.registry.lookup(provider_id)
         if provider is None:
             self._publish_event("provider.not_found", {"provider_id": provider_id})
@@ -280,6 +301,8 @@ class ProviderRuntime:
             provider_id: The provider identifier.
             task_id: The task identifier to cancel.
         """
+        if self._provider_registry_runtime is None or not hasattr(self._provider_registry_runtime, "registry"):
+            return
         provider = self._provider_registry_runtime.registry.lookup(provider_id)
         if provider:
             await provider.cancel(task_id)
@@ -301,6 +324,8 @@ class ProviderRuntime:
         Returns:
             Provider metrics dict.
         """
+        if self._provider_registry_runtime is None:
+            return None
         return self._provider_registry_runtime.get_metrics(provider_id)
 
     def get_all_metrics(self) -> dict[str, dict[str, Any]]:
@@ -309,6 +334,8 @@ class ProviderRuntime:
         Returns:
             Dict mapping provider ID to metrics.
         """
+        if self._provider_registry_runtime is None:
+            return {}
         return self._provider_registry_runtime.get_all_metrics()
 
     # ------------------------------------------------------------------

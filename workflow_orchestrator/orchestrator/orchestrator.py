@@ -26,7 +26,6 @@ from workflow_orchestrator.config.config_manager import ConfigurationManager
 from workflow_orchestrator.orchestrator.boot import BootSequence, BootReport
 from workflow_orchestrator.orchestrator.provider_manager import ProviderManager
 from workflow_orchestrator.orchestrator.transport_manager import TransportManager
-from workflow_orchestrator.orchestrator.agent_manager import AgentManager
 from workflow_orchestrator.orchestrator.mcp_manager import MCPManager
 from workflow_orchestrator.orchestrator.discovery import AutoDiscovery, CompleteDiscoveryAudit
 from workflow_orchestrator.orchestrator.doctor import WorkflowDoctor, DiagnosticReport
@@ -53,6 +52,8 @@ from workflow_orchestrator.workers.implementations import (
     CopilotDesktopWorker,
     OpenCodeDesktopWorker,
     OllamaDesktopWorker,
+    AntigravityDesktopWorker,
+    FreeBuffDesktopWorker,
 )
 
 
@@ -74,7 +75,6 @@ class Orchestrator:
 
         self.provider_manager = ProviderManager()
         self.transport_manager = TransportManager()
-        self.agent_manager = AgentManager()
         self.mcp_manager = MCPManager()
         self.auto_discovery = AutoDiscovery()
         self.doctor = WorkflowDoctor()
@@ -95,6 +95,8 @@ class Orchestrator:
         self.worker_registry.register_worker(CopilotDesktopWorker())
         self.worker_registry.register_worker(OpenCodeDesktopWorker())
         self.worker_registry.register_worker(OllamaDesktopWorker())
+        self.worker_registry.register_worker(AntigravityDesktopWorker())
+        self.worker_registry.register_worker(FreeBuffDesktopWorker())
 
     @classmethod
     def get_instance(cls) -> "Orchestrator":

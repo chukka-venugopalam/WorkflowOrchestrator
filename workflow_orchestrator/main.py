@@ -228,16 +228,18 @@ def handle_providers(orchestrator: Orchestrator) -> None:
 
 
 def handle_agents(orchestrator: Orchestrator) -> None:
-    """Option 5: List & Manage Agents."""
-    agents = orchestrator.agent_manager.discover_agents()
-    table = Table(title="Discovered AI Agents", box=box.ROUNDED)
-    table.add_column("Agent ID", style="cyan")
+    """Option 5: List & Manage Desktop AI Workers."""
+    orchestrator.worker_registry.discover_and_start_all()
+    workers = orchestrator.worker_registry.list_workers()
+    table = Table(title="Discovered Local Desktop Workers", box=box.ROUNDED)
+    table.add_column("Worker ID", style="cyan")
     table.add_column("Name", style="white")
-    table.add_column("Status", style="green")
-    table.add_column("Version", style="dim white")
+    table.add_column("State", style="green")
+    table.add_column("Transport", style="dim white")
 
-    for a in agents:
-        table.add_row(a.agent_id, a.name, a.status.upper(), a.version)
+    for w in workers:
+        state_str = w.state.value.upper() if hasattr(w.state, "value") else str(w.state).upper()
+        table.add_row(w.worker_id, w.name, state_str, getattr(w, "transport_type", "local"))
 
     console.print(table)
 
