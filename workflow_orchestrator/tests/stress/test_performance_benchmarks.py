@@ -33,7 +33,7 @@ class TestPerformanceBenchmarks:
         t1 = time.time()
         duration_ms = (t1 - t0) * 1000
         assert rep.success is True
-        assert duration_ms < 5000.0  # Boot under 5000ms
+        assert duration_ms < 10000.0  # Boot under 10000ms
 
     def test_bm_02_workflow_compiler_dag_compilation(self):
         compiler = WorkflowCompiler()

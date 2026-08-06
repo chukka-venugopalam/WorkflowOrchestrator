@@ -42,10 +42,12 @@ class DesktopWorkerRegistry:
             return [w for w in self._workers.values() if w.state in (WorkerState.IDLE, WorkerState.BUSY)]
         return list(self._workers.values())
 
-    def find_workers_by_skill(self, skill_name: str) -> List[DesktopWorker]:
+    def find_workers_by_skill(self, skill_name: str, active_only: bool = False) -> List[DesktopWorker]:
         """Find desktop workers offering a specific skill."""
         matching = []
         for worker in self._workers.values():
+            if active_only and worker.state in (WorkerState.STOPPED, WorkerState.FAILED):
+                continue
             for cap in worker.skills:
                 if cap.skill_name.lower() == skill_name.lower():
                     matching.append(worker)

@@ -130,7 +130,7 @@ class ParallelTaskQueue:
         task.state = TaskProgressState.RUNNING
 
         # 1. Capability-based worker selection & real discovery filtering
-        eligible_workers = self.worker_registry.find_workers_by_skill(task.required_skill)
+        eligible_workers = self.worker_registry.find_workers_by_skill(task.required_skill, active_only=True)
         installed_workers = [w for w in eligible_workers if w.discover()]
 
         if not installed_workers:

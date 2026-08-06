@@ -60,7 +60,7 @@ class TestAgentDetector:
         assert "cursor" in ids
 
     def test_no_agents(self) -> None:
-        with patch("shutil.which", return_value=None):
+        with patch("shutil.which", return_value=None), patch("pathlib.Path.exists", return_value=False):
             detector = AgentDetector()
             agents = detector.detect_all()
             assert len(agents) == 0

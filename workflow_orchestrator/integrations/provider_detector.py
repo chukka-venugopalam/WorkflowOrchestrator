@@ -75,6 +75,13 @@ class ProviderDetector:
         """
         self._event_bus = event_bus
 
+    @staticmethod
+    def _get_safe_home() -> Path:
+        try:
+            return Path.home()
+        except Exception:
+            return Path("/tmp")
+
     # ------------------------------------------------------------------
     # Detection
     # ------------------------------------------------------------------
@@ -158,7 +165,7 @@ class ProviderDetector:
             )
 
         # 2. Check filesystem paths
-        claude_path = Path.home() / "Library" / "Application Support" / "Claude"
+        claude_path = self._get_safe_home() / "Library" / "Application Support" / "Claude"
         if claude_path.exists():
             return DetectedProvider(
                 provider_id="anthropic.claude",
@@ -447,9 +454,9 @@ class ProviderDetector:
 
         # 2. Check extension directories
         ext_dirs = [
-            Path.home() / ".vscode" / "extensions",
-            Path.home() / ".vscode-insiders" / "extensions",
-            Path.home() / ".cursor" / "extensions",
+            self._get_safe_home() / ".vscode" / "extensions",
+            self._get_safe_home() / ".vscode-insiders" / "extensions",
+            self._get_safe_home() / ".cursor" / "extensions",
             Path(os.environ.get("USERPROFILE", "")) / ".vscode" / "extensions",
         ]
         for ext_dir in ext_dirs:
@@ -475,9 +482,9 @@ class ProviderDetector:
     def _detect_continue(self) -> DetectedProvider:
         """Detect Continue.dev extension."""
         ext_dirs = [
-            Path.home() / ".vscode" / "extensions",
-            Path.home() / ".vscode-insiders" / "extensions",
-            Path.home() / ".cursor" / "extensions",
+            self._get_safe_home() / ".vscode" / "extensions",
+            self._get_safe_home() / ".vscode-insiders" / "extensions",
+            self._get_safe_home() / ".cursor" / "extensions",
         ]
         for ext_dir in ext_dirs:
             if ext_dir.exists():
@@ -608,7 +615,7 @@ class ProviderDetector:
     def _detect_antigravity(self) -> DetectedProvider:
         """Detect Antigravity AI agent tool."""
         agy_path = shutil.which("agy") or shutil.which("antigravity")
-        antigravity_dir = Path.home() / ".gemini" / "antigravity"
+        antigravity_dir = self._get_safe_home() / ".gemini" / "antigravity"
         if agy_path or antigravity_dir.exists():
             return DetectedProvider(
                 provider_id="antigravity",

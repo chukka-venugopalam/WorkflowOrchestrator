@@ -107,7 +107,7 @@ class WorkflowDoctor:
         # 4. Workers
         self.worker_registry.discover_and_start_all()
         workers = self.worker_registry.list_workers()
-        active_workers = [w for w in workers if getattr(w.state, "name", str(w.state)) != "OFFLINE"]
+        active_workers = [w for w in workers if w.state not in (WorkerState.STOPPED, WorkerState.FAILED)]
         items.append(DiagnosticItem("Workers", "Desktop Workers", "OK" if active_workers else "INFO", f"{len(active_workers)} active desktop worker(s) out of {len(workers)} total", None))
 
         # 5. MCP Servers
