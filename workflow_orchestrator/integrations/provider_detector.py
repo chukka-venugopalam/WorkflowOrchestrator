@@ -106,13 +106,20 @@ class ProviderDetector:
             try:
                 provider = detector()
                 detected.append(provider)
+                logger.info("Detector result: %s -> available=%s reason=%s", provider.provider_id, provider.available, getattr(provider, "unavailable_reason", ""))
                 if provider.available:
                     self._publish_event("integration.provider_detected", {
                         "provider_id": provider.provider_id,
                         "transport": provider.transport,
                         "version": provider.version,
                     })
-            except Exception:
+            except Exception as exc:
+                logger.warning(
+                    "Detector '%s' raised an exception and was skipped: %s",
+                    getattr(detector, "__name__", str(detector)),
+                    exc,
+                    exc_info=True,
+                )
                 continue
 
         logger.info("Detected %d total provider statuses", len(detected))

@@ -29,7 +29,6 @@ Packages:
 
 from __future__ import annotations
 
-from workflow_orchestrator.integrations.provider_manager import ProviderManager, ProviderStatus as IntegrationProviderStatus
 from workflow_orchestrator.integrations.provider_detector import ProviderDetector
 from workflow_orchestrator.integrations.provider_installer import ProviderInstaller
 from workflow_orchestrator.integrations.provider_configuration import ProviderConfiguration

@@ -141,10 +141,12 @@ class Orchestrator:
         idea: str,
         project_name: Optional[str] = None,
         workspace_dir: Optional[str | Path] = None,
+        prompt_user_fn: Any = None,
     ) -> FlowExecutionRecord:
         """Create and execute a project end-to-end from a single user prompt."""
         return self.project_flow.execute_project_from_prompt(
             idea=idea,
             project_name=project_name,
             workspace_dir=workspace_dir,
+            prompt_user_fn=prompt_user_fn,
         )

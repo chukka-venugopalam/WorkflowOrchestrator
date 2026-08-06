@@ -141,10 +141,22 @@ def handle_create_project(orchestrator: Orchestrator) -> None:
     console.print("\n[bold green]Launching AI Operating System Project Pipeline...[/]")
     console.print("[dim white]Note: Project build pipeline is active. Real-time task progress will be logged below (pipeline timeout: 10 minutes)...[/]\n")
 
+    def _cli_prompt_user_fn(description: str, scores: dict) -> str:
+        console.print(
+            "\n[bold yellow]The project type is unclear from your description.[/]"
+        )
+        console.print(f"[dim]Original description: {description}[/]")
+        return Prompt.ask(
+            "[bold yellow]Please clarify what kind of project this is "
+            "(e.g. 'a game', 'a mobile app', 'a CLI tool')[/]",
+            default="",
+        )
+
     rec = orchestrator.create_project(
         idea=idea,
         project_name=name_val or folder_name,
         workspace_dir=resolved_path,
+        prompt_user_fn=_cli_prompt_user_fn,
     )
 
     if rec.status == "completed":

@@ -228,6 +228,7 @@ class ProjectBuilder:
         idea: str,
         project_name: str = "",
         project_root: Optional[Path] = None,
+        prompt_user_fn: Any = None,
     ) -> dict[str, Any]:
         """Build a complete project from a natural-language idea.
 
@@ -238,6 +239,7 @@ class ProjectBuilder:
             idea: The natural-language project idea (e.g., "Build a Food Delivery Platform").
             project_name: Optional explicit project name.
             project_root: Optional target workspace root directory.
+            prompt_user_fn: Optional user clarification callback when classification is ambiguous.
 
         Returns:
             Dict with build results including project_id, status, and artifacts.
@@ -276,7 +278,7 @@ class ProjectBuilder:
             self._state_mgr.transition_to("classifying")
             provider_mgr = self._resolve_provider_manager()
             project_type, project_scale = self._classifier.classify_with_disambiguation(
-                idea, name, provider_manager=provider_mgr,
+                idea, name, provider_manager=provider_mgr, prompt_user_fn=prompt_user_fn,
             )
             self._project_state.project_type = project_type.value
 

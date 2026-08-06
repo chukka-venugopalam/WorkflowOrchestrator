@@ -6,8 +6,4 @@ management, health monitoring, and capability indexing.
 
 from __future__ import annotations
 
-from workflow_orchestrator.providers.registry.provider_registry_runtime import ProviderRegistryRuntime
-
-__all__ = [
-    "ProviderRegistryRuntime",
-]
+__all__: list[str] = []

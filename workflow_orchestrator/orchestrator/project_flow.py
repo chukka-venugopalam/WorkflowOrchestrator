@@ -99,6 +99,7 @@ class ProjectFlowEngine:
         project_name: Optional[str] = None,
         workspace_dir: Optional[str | Path] = None,
         auto_confirm: bool = True,
+        prompt_user_fn: Any = None,
     ) -> FlowExecutionRecord:
         """Execute the full 16-phase automated project lifecycle from a text prompt.
 
@@ -107,6 +108,7 @@ class ProjectFlowEngine:
             project_name: Optional explicit project name.
             workspace_dir: Target output directory.
             auto_confirm: If True, executes without manual pausing.
+            prompt_user_fn: Optional user clarification callback when classification is ambiguous.
 
         Returns:
             FlowExecutionRecord detailing the build and execution outcomes.
@@ -135,6 +137,7 @@ class ProjectFlowEngine:
                 idea=idea,
                 project_name=project_name or "",
                 project_root=target,
+                prompt_user_fn=prompt_user_fn,
             )
 
             # CEO Orchestrator Multi-Worker Task Dispatch & Verification

@@ -75,7 +75,6 @@ __all__ = [
 
 # Provider
 from workflow_orchestrator.intelligence.provider import IProvider
-from workflow_orchestrator.intelligence.provider_registry import ProviderRegistry
 
 # Agent
 from workflow_orchestrator.intelligence.agent import IAgent

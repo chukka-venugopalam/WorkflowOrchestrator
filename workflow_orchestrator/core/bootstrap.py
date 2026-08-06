@@ -181,7 +181,6 @@ class BootstrapSequence:
     def _register_intelligence_services(self) -> None:
         """Register intelligence plane services."""
         from workflow_orchestrator.intelligence.session import SessionManager
-        from workflow_orchestrator.intelligence.provider_registry import ProviderRegistry
         from workflow_orchestrator.intelligence.agent_registry import AgentRegistry
         from workflow_orchestrator.intelligence.capability_matcher import CapabilityMatcher
         from workflow_orchestrator.intelligence.router import Router
@@ -196,14 +195,6 @@ class BootstrapSequence:
             description="Session tracking across providers and agents",
         )
 
-        # Provider Registry
-        provider_registry = ProviderRegistry()
-        self._registry.register_instance(
-            "provider_registry",
-            provider_registry,
-            description="AI provider adapter registry",
-        )
-
         # Agent Registry
         agent_registry = AgentRegistry()
         self._registry.register_instance(
@@ -214,7 +205,6 @@ class BootstrapSequence:
 
         # Capability Matcher
         capability_matcher = CapabilityMatcher(
-            provider_registry=provider_registry,
             agent_registry=agent_registry,
         )
         self._registry.register_instance(
@@ -249,40 +239,7 @@ class BootstrapSequence:
 
     def _register_provider_services(self) -> None:
         """Register provider runtime services."""
-        from workflow_orchestrator.providers.registry import ProviderRegistryRuntime
-        from workflow_orchestrator.providers.implementations import (
-            ClaudeProvider,
-            ChatGPTProvider,
-            GeminiProvider,
-        )
-
-        provider_registry = self._registry.get_typed("provider_registry", object)
-        event_bus = self._registry.get("event_bus")
-        capability_registry = self._registry.get("capability_registry")
-
-        # Register default providers into the ProviderRegistry
-        for provider_cls in [ClaudeProvider, ChatGPTProvider, GeminiProvider]:
-            try:
-                provider = provider_cls()
-                # Wire event bus for provider-level events
-                if hasattr(provider, "set_event_bus"):
-                    provider.set_event_bus(event_bus)
-                provider_registry.register(provider)
-                logger.debug("Registered provider: %s", provider.provider_id)
-            except Exception as exc:
-                logger.warning("Failed to register provider %s: %s", provider_cls.__name__, exc)
-
-        # Provider Registry Runtime
-        provider_registry_runtime = ProviderRegistryRuntime(
-            registry=provider_registry,
-            event_bus=event_bus,
-            capability_registry=capability_registry,
-        )
-        self._registry.register_instance(
-            "provider_registry_runtime",
-            provider_registry_runtime,
-            description="Provider lifecycle and health management",
-        )
+        pass
 
     def _register_agent_services(self) -> None:
         """Register agent runtime services."""
@@ -352,9 +309,7 @@ class BootstrapSequence:
         config = self._registry.get("config")
 
         # Provider Runtime
-        provider_registry_runtime = self._registry.get("provider_registry_runtime")
         provider_runtime = ProviderRuntime(
-            provider_registry_runtime=provider_registry_runtime,
             event_bus=event_bus,
             artifact_manager=self._registry.get("artifact_manager"),
             session_manager=self._registry.get("session_manager"),
@@ -551,8 +506,8 @@ class BootstrapSequence:
 
     def _register_integration_services(self) -> None:
         """Register Integration & Discovery services."""
+        from workflow_orchestrator.orchestrator.provider_manager import ProviderManager
         from workflow_orchestrator.integrations import (
-            ProviderManager,
             ProviderDetector,
             ProviderInstaller,
             ProviderConfiguration,

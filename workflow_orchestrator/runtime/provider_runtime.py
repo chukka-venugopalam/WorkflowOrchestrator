@@ -18,7 +18,6 @@ from workflow_orchestrator.intelligence.models import (
     ProviderStatus,
     RoutingDecision,
 )
-from workflow_orchestrator.providers.registry.provider_registry_runtime import ProviderRegistryRuntime
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +40,7 @@ class ProviderRuntime:
 
     def __init__(
         self,
-        provider_registry_runtime: ProviderRegistryRuntime,
+        provider_registry_runtime: Any = None,
         event_bus: Any = None,
         context_engine: Any = None,
         artifact_manager: Any = None,
@@ -50,7 +49,7 @@ class ProviderRuntime:
         """Initialize the Provider Runtime.
 
         Args:
-            provider_registry_runtime: The provider registry runtime.
+            provider_registry_runtime: Optional provider registry runtime.
             event_bus: Optional EventBus for publishing events.
             context_engine: Optional ContextEngine for context assembly.
             artifact_manager: Optional ArtifactManager for storing artifacts.
@@ -63,7 +62,7 @@ class ProviderRuntime:
         self._session_manager = session_manager
 
     @property
-    def provider_registry_runtime(self) -> ProviderRegistryRuntime:
+    def provider_registry_runtime(self) -> Any:
         """The underlying provider registry runtime."""
         return self._provider_registry_runtime
 

@@ -18,8 +18,6 @@ from workflow_orchestrator.intelligence.models import (
     Capability,
     RoutingCandidate,
 )
-from workflow_orchestrator.intelligence.provider_registry import ProviderRegistry
-
 logger = logging.getLogger(__name__)
 
 
@@ -54,13 +52,13 @@ class CapabilityMatcher:
 
     def __init__(
         self,
-        provider_registry: ProviderRegistry,
-        agent_registry: AgentRegistry,
+        provider_registry: Optional[ProviderRegistry] = None,
+        agent_registry: Optional[AgentRegistry] = None,
     ) -> None:
         """Initialize the capability matcher.
 
         Args:
-            provider_registry: Registry of available providers.
+            provider_registry: Optional registry of available providers.
             agent_registry: Registry of available agents.
         """
         self._provider_registry = provider_registry

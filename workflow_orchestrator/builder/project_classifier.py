@@ -284,10 +284,14 @@ class ProjectClassifier:
                         "[web, mobile, desktop, cli, ai, ml, embedded, robotics, research, education, enterprise, game, api, library, infrastructure, hybrid] "
                         "and one scale from [minimal, standard, large]. Reply with only those two words separated by a space."
                     )
-                    # Simulated/defensive invocation of provider
+                    # NOTE: real provider invocation is not implemented yet
+                    # (planned for Phase 3). Until then this always falls
+                    # through to the human-prompt fallback below.
                     resp_text = ""
-                    if hasattr(provider_manager, "invoke_provider"):
-                        resp_text = provider_manager.invoke_provider(prov.name, prompt)
+                    logger.info(
+                        "AI-assisted classification not yet implemented — "
+                        "falling through to human clarification prompt"
+                    )
 
                     parsed_type, parsed_scale = self._parse_disambiguation_response(resp_text)
                     if parsed_type != ProjectType.UNKNOWN:

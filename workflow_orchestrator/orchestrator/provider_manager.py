@@ -23,12 +23,9 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-from workflow_orchestrator.integrations.provider_manager import ProviderManager as IntProviderManager, ProviderInfo as IntProviderInfo
 from workflow_orchestrator.integrations.provider_detector import ProviderDetector, DetectedProvider
 from workflow_orchestrator.integrations.provider_configuration import ProviderConfiguration
 from workflow_orchestrator.integrations.credential_manager import CredentialManager
-from workflow_orchestrator.intelligence.provider_registry import ProviderRegistry
-from workflow_orchestrator.providers.registry.provider_registry_runtime import ProviderRegistryRuntime
 from workflow_orchestrator.runtime.provider_runtime import ProviderRuntime
 
 logger = logging.getLogger(__name__)
@@ -102,19 +99,17 @@ class ProviderManager:
 
     def __init__(
         self,
-        int_provider_manager: Optional[IntProviderManager] = None,
         provider_detector: Optional[ProviderDetector] = None,
         provider_config: Optional[ProviderConfiguration] = None,
         credential_manager: Optional[CredentialManager] = None,
         provider_runtime: Optional[ProviderRuntime] = None,
+        event_bus: Optional[Any] = None,
     ) -> None:
-        self.int_manager = int_provider_manager or IntProviderManager()
         self.detector = provider_detector or ProviderDetector()
         self.config_mgr = provider_config or ProviderConfiguration()
         self.cred_mgr = credential_manager or CredentialManager()
-        base_reg = ProviderRegistry()
-        reg_rt = ProviderRegistryRuntime(registry=base_reg)
-        self.runtime = provider_runtime or ProviderRuntime(provider_registry_runtime=reg_rt)
+        self.runtime = provider_runtime or ProviderRuntime()
+        self.event_bus = event_bus
 
     def discover_and_load(self) -> List[ProviderMetadata]:
         """Discover installed providers and load their current status."""

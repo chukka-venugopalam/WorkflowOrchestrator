@@ -17,7 +17,7 @@ from workflow_orchestrator.core.event_bus import Event, EventBus
 from workflow_orchestrator.core.service_registry import ServiceRegistry
 from workflow_orchestrator.config.config_manager import ConfigurationManager
 from workflow_orchestrator.config.profile_loader import ProfileLoader
-from workflow_orchestrator.integrations.provider_manager import ProviderManager as IntProviderManager
+from workflow_orchestrator.orchestrator.provider_manager import ProviderManager
 from workflow_orchestrator.integrations.agent_detector import AgentDetector
 from workflow_orchestrator.plugins.registry import default_registry as plugin_registry
 from workflow_orchestrator.execution.workflow_loader import WorkflowLoader
@@ -182,10 +182,10 @@ class BootSequence:
     def _step_4_load_providers(self) -> str:
         """Step 4: Load Providers."""
         if self.kernel.registry.has_service("provider_manager"):
-            pm: IntProviderManager = self.kernel.get_service("provider_manager")
-            providers = pm.list_installed()
+            pm: ProviderManager = self.kernel.get_service("provider_manager")
+            providers = pm.discover_and_load()
             return f"Loaded {len(providers)} provider configuration(s)"
-        pm = IntProviderManager()
+        pm = ProviderManager()
         self.kernel.registry.register_instance("provider_manager", pm)
         return "ProviderManager initialized"
 
