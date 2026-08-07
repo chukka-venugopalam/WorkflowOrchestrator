@@ -54,29 +54,25 @@ from workflow_orchestrator.workers.implementations import (
     OllamaDesktopWorker,
     AntigravityDesktopWorker,
     FreeBuffDesktopWorker,
+    CodexCLIDesktopWorker,
 )
 
 
 class Orchestrator:
-    """The master AI Operating System Orchestrator facade."""
+    """Master controller singleton for the Workflow Orchestrator framework."""
 
     _instance: Optional["Orchestrator"] = None
 
-    def __init__(self, kernel: Optional[Kernel] = None) -> None:
-        self.kernel = kernel or Kernel.create_default()
-        self.boot_sequence = BootSequence(kernel=self.kernel)
-
-        # Managers, Registries & Engines
-        self.worker_registry = DesktopWorkerRegistry()
-        self._register_default_desktop_workers()
-
-        from workflow_orchestrator.orchestrator.autonomous_loop import AutonomousProjectLoop
-        self.autonomous_loop = AutonomousProjectLoop(worker_registry=self.worker_registry)
-
+    def __init__(self) -> None:
+        self.kernel = Kernel()
+        self.config_manager = ConfigurationManager()
+        self.boot_sequence = BootSequence(self.kernel)
         self.provider_manager = ProviderManager()
         self.transport_manager = TransportManager()
         self.mcp_manager = MCPManager()
-        self.auto_discovery = AutoDiscovery()
+        self.worker_registry = DesktopWorkerRegistry()
+        self._register_default_desktop_workers()
+        self.discovery = AutoDiscovery()
         self.doctor = WorkflowDoctor()
         self.setup_wizard = SetupWizard()
         self.project_flow = ProjectFlowEngine()
@@ -97,6 +93,7 @@ class Orchestrator:
         self.worker_registry.register_worker(OllamaDesktopWorker())
         self.worker_registry.register_worker(AntigravityDesktopWorker())
         self.worker_registry.register_worker(FreeBuffDesktopWorker())
+        self.worker_registry.register_worker(CodexCLIDesktopWorker())
 
     @classmethod
     def get_instance(cls) -> "Orchestrator":

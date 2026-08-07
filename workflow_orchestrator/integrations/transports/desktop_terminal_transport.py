@@ -54,7 +54,7 @@ class DesktopTerminalTransport:
             logger.error(f"Failed to start CLI process for '{self.executable_name}': {e}")
             return False
 
-    def send_prompt(self, prompt: str, timeout_seconds: float = 5.0, cwd: Optional[Path] = None) -> str:
+    def send_prompt(self, prompt: str, timeout_seconds: float = 30.0, cwd: Optional[Path] = None) -> str:
         """Dispatch prompt string to real process stdin/CLI command and capture actual output."""
         binary = self.binary_path or shutil.which(self.executable_name)
         if not binary:

@@ -106,6 +106,7 @@ class ProviderDetector:
             self._detect_freebuff,
             self._detect_ollama,
             self._detect_openrouter,
+            self._detect_deepseek,
             self._detect_antigravity,
         ]
 
@@ -610,6 +611,29 @@ class ProviderDetector:
             detected_from="cloud_api",
             available=False,
             unavailable_reason="OpenRouter API key not configured in environment",
+        )
+
+    def _detect_deepseek(self) -> DetectedProvider:
+        """Detect DeepSeek API service via environment key."""
+        has_key = bool(os.environ.get("DEEPSEEK_API_KEY") or os.environ.get("DEEPSEEK_KEY"))
+        if has_key:
+            return DetectedProvider(
+                provider_id="deepseek",
+                name="DeepSeek AI",
+                version="cloud",
+                transport="rest_api",
+                detected_from="DEEPSEEK_API_KEY env var",
+                available=True,
+                unavailable_reason="",
+            )
+        return DetectedProvider(
+            provider_id="deepseek",
+            name="DeepSeek AI",
+            version="cloud",
+            transport="rest_api",
+            detected_from="cloud_api",
+            available=False,
+            unavailable_reason="DEEPSEEK_API_KEY not configured in environment",
         )
 
     def _detect_antigravity(self) -> DetectedProvider:

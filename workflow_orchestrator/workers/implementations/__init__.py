@@ -13,6 +13,7 @@ from workflow_orchestrator.workers.implementations.ollama_worker import OllamaDe
 from workflow_orchestrator.workers.implementations.optional_web_worker import OptionalWebDesktopWorker
 from workflow_orchestrator.workers.implementations.antigravity_worker import AntigravityDesktopWorker
 from workflow_orchestrator.workers.implementations.freebuff_worker import FreeBuffDesktopWorker
+from workflow_orchestrator.workers.implementations.codex_cli_worker import CodexCLIDesktopWorker
 
 __all__ = [
     "ClaudeCodeDesktopWorker",
@@ -23,4 +24,5 @@ __all__ = [
     "OptionalWebDesktopWorker",
     "AntigravityDesktopWorker",
     "FreeBuffDesktopWorker",
+    "CodexCLIDesktopWorker",
 ]

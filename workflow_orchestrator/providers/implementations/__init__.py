@@ -15,6 +15,7 @@ from workflow_orchestrator.providers.implementations.gemini_provider import Gemi
 from workflow_orchestrator.providers.implementations.openrouter_provider import OpenRouterProvider
 from workflow_orchestrator.providers.implementations.ollama_provider import OllamaProvider
 from workflow_orchestrator.providers.implementations.azure_openai_provider import AzureOpenAIProvider
+from workflow_orchestrator.providers.implementations.deepseek_provider import DeepSeekProvider
 
 __all__ = [
     "ClaudeProvider",
@@ -23,4 +24,5 @@ __all__ = [
     "OpenRouterProvider",
     "OllamaProvider",
     "AzureOpenAIProvider",
+    "DeepSeekProvider",
 ]
