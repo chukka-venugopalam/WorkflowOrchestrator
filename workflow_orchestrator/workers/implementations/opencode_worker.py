@@ -28,7 +28,11 @@ class OpenCodeDesktopWorker(DesktopWorker):
         self.terminal_transport = DesktopTerminalTransport(executable_name="opencode")
 
     def discover(self) -> bool:
-        return self.terminal_transport.is_available()
+        """Check if OpenCode executable is installed on system PATH."""
+        import shutil
+        import os
+        found = shutil.which("opencode")
+        return bool(found and os.path.exists(found))
 
     def _execute_desktop_task(self, task_payload: Dict[str, Any]) -> DesktopWorkerTaskResult:
         prompt = task_payload.get("prompt", "Execute task")

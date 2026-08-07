@@ -33,7 +33,7 @@ class StartupDashboard:
         table.add_column("Details", style="dim white")
 
         for res in boot_results:
-            status_text = "[bold green]✓ PASSED[/]" if res.success else "[bold red]✗ FAILED[/]"
+            status_text = "[bold green]PASSED[/]" if res.success else "[bold red]FAILED[/]"
             table.add_row(str(res.step_number), res.name, status_text, res.details)
 
         console.print(Panel(table, border_style="cyan", expand=False))

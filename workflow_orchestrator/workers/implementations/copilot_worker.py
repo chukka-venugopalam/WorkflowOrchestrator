@@ -28,7 +28,20 @@ class CopilotDesktopWorker(DesktopWorker):
         self.ui_transport = DesktopUITransport(target_window_title="Visual Studio Code")
 
     def discover(self) -> bool:
-        return self.ui_transport.is_available()
+        """Check if VS Code executable or Copilot extension is installed."""
+        import shutil
+        import os
+        from pathlib import Path
+        if shutil.which("code") or shutil.which("code.cmd"):
+            return True
+        ext_dir = Path.home() / ".vscode" / "extensions"
+        if ext_dir.exists():
+            try:
+                if any("copilot" in p.name.lower() for p in ext_dir.iterdir() if p.is_dir()):
+                    return True
+            except Exception:
+                pass
+        return False
 
     def _execute_desktop_task(self, task_payload: Dict[str, Any]) -> DesktopWorkerTaskResult:
         prompt = task_payload.get("prompt", "Generate Unit Tests")
