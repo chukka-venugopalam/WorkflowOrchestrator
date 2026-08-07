@@ -54,11 +54,8 @@ class DesktopTerminalTransport:
             logger.error(f"Failed to start CLI process for '{self.executable_name}': {e}")
             return False
 
-    def send_prompt(self, prompt: str, timeout_seconds: float = 30.0, cwd: Optional[Path] = None) -> str:
+    def send_prompt(self, prompt: str, timeout_seconds: float = 5.0, cwd: Optional[Path] = None) -> str:
         """Dispatch prompt string to real process stdin/CLI command and capture actual output."""
-        if os.environ.get("PYTEST_CURRENT_TEST") or os.environ.get("CI"):
-            return f"[Test Stream Execution] Terminal output for '{self.executable_name}': {prompt[:60]}"
-
         binary = self.binary_path or shutil.which(self.executable_name)
         if not binary:
             raise FileNotFoundError(
@@ -70,25 +67,38 @@ class DesktopTerminalTransport:
         cmd = [binary] + self.default_args
 
         try:
-            # Execute real CLI command on user desktop
-            res = subprocess.run(
+            proc = subprocess.Popen(
                 cmd,
-                input=prompt,
-                capture_output=True,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
                 text=True,
                 cwd=target_cwd,
-                timeout=timeout_seconds,
                 shell=False,
             )
-            output = res.stdout.strip() or res.stderr.strip()
-            if not output and res.returncode == 0:
-                output = f"Command '{self.executable_name}' executed cleanly (Exit code 0)."
-            elif not output and res.returncode != 0:
-                output = f"Command '{self.executable_name}' exited with code {res.returncode}."
-            return output
-        except subprocess.TimeoutExpired:
-            logger.warning(f"Real CLI command '{self.executable_name}' timed out after {timeout_seconds}s.")
-            return f"Process '{self.executable_name}' timed out after {timeout_seconds} seconds."
+            try:
+                stdout, stderr = proc.communicate(input=prompt, timeout=timeout_seconds)
+                output = (stdout or stderr or "").strip()
+                if not output and proc.returncode == 0:
+                    output = f"Command '{self.executable_name}' executed cleanly (Exit code 0)."
+                elif not output and proc.returncode != 0:
+                    output = f"Command '{self.executable_name}' exited with code {proc.returncode}."
+                return output
+            except subprocess.TimeoutExpired:
+                import sys
+                if sys.platform == "win32":
+                    try:
+                        subprocess.run(["taskkill", "/F", "/T", "/PID", str(proc.pid)], capture_output=True, timeout=2.0)
+                    except Exception:
+                        proc.kill()
+                else:
+                    proc.kill()
+                try:
+                    stdout, stderr = proc.communicate(timeout=1.0)
+                except Exception:
+                    pass
+                logger.warning(f"Real CLI command '{self.executable_name}' timed out after {timeout_seconds}s.")
+                return f"Process '{self.executable_name}' timed out after {timeout_seconds} seconds."
         except Exception as e:
             logger.error(f"Real CLI execution error for '{self.executable_name}': {e}")
             raise RuntimeError(f"Real execution failed for '{self.executable_name}': {e}") from e

@@ -113,9 +113,6 @@ class WorkspaceObserver:
 
     def run_verification_tests(self) -> tuple[str, bool]:
         """Run verification tests in project workspace."""
-        if os.environ.get("PYTEST_CURRENT_TEST") or (self.project_root / "workflow_orchestrator").exists():
-            return ("Verification test execution bypassed during test suite run.", True)
-
         test_dir = self.project_root / "tests"
         if not test_dir.exists():
             return ("No tests directory found; verification skipped.", True)

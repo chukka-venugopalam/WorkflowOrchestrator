@@ -33,9 +33,6 @@ class DesktopUITransport:
         if not self.is_available():
             logger.info(f"Target IDE '{self.target_window_title}' is not available. Skipping UI dispatch.")
             return False
-        if os.environ.get("PYTEST_CURRENT_TEST") or os.environ.get("CI"):
-            logger.info(f"[Test Execution] Skipping physical window focus for '{self.target_window_title}'.")
-            return True
 
         try:
             try:
@@ -53,13 +50,16 @@ class DesktopUITransport:
 
                 def _enum_cb(hwnd, extra):
                     if user32.IsWindowVisible(hwnd):
+                        if hasattr(user32, "IsHungAppWindow") and user32.IsHungAppWindow(hwnd):
+                            return True
                         length = user32.GetWindowTextLengthW(hwnd)
-                        buff = ctypes.create_unicode_buffer(length + 1)
-                        user32.GetWindowTextW(hwnd, buff, length + 1)
-                        if self.target_window_title.lower() in buff.value.lower():
-                            user32.ShowWindow(hwnd, 9)  # SW_RESTORE
-                            user32.SetForegroundWindow(hwnd)
-                            return False
+                        if length > 0:
+                            buff = ctypes.create_unicode_buffer(length + 1)
+                            user32.GetWindowTextW(hwnd, buff, length + 1)
+                            if self.target_window_title.lower() in buff.value.lower():
+                                user32.ShowWindow(hwnd, 9)  # SW_RESTORE
+                                user32.SetForegroundWindow(hwnd)
+                                return False
                     return True
 
                 EnumWindowsProc = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_int, ctypes.c_int)
