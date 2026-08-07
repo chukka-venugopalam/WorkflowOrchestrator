@@ -96,6 +96,8 @@ class Orchestrator:
         self.worker_registry.register_worker(FreeBuffDesktopWorker())
         self.worker_registry.register_worker(CodexCLIDesktopWorker())
         self.worker_registry.register_worker(OptionalWebDesktopWorker("chatgpt"))
+        self.worker_registry.register_worker(OptionalWebDesktopWorker("claude"))
+        self.worker_registry.register_worker(OptionalWebDesktopWorker("gemini"))
 
     @classmethod
     def get_instance(cls) -> "Orchestrator":
