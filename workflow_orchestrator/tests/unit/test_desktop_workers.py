@@ -20,6 +20,7 @@ from workflow_orchestrator.workers.implementations import (
     OpenCodeDesktopWorker,
     OllamaDesktopWorker,
     OptionalWebDesktopWorker,
+    CodexCLIDesktopWorker,
 )
 from workflow_orchestrator.orchestrator.orchestrator import Orchestrator
 
@@ -81,6 +82,7 @@ class TestDesktopWorkerAbstraction:
             OpenCodeDesktopWorker(),
             OllamaDesktopWorker("codellama"),
             OptionalWebDesktopWorker("chatgpt"),
+            CodexCLIDesktopWorker(),
         ]
 
         for w in workers:
@@ -90,6 +92,7 @@ class TestDesktopWorkerAbstraction:
             
             # Real discovery check
             is_installed = w.discover()
+            assert isinstance(is_installed, bool)
             if is_installed:
                 assert w.start() is True
                 res = w.execute({"prompt": "Test Prompt"})
@@ -99,6 +102,14 @@ class TestDesktopWorkerAbstraction:
                 res = w.execute({"prompt": "Test Prompt"})
                 assert isinstance(res, DesktopWorkerTaskResult)
 
+    def test_codex_cli_worker_tool_not_found_returns_failure(self):
+        worker = CodexCLIDesktopWorker()
+        worker.cli_path = "non_existent_codex_binary_path_xyz"
+        assert worker.discover() is False
+        res = worker.execute({"prompt": "Test Prompt"})
+        assert res.success is False
+        assert "not found" in res.error_message.lower() or "not found" in res.output_text.lower()
+
     def test_orchestrator_worker_registry_integration(self):
         orch = Orchestrator.get_instance()
         assert orch.worker_registry is not None
@@ -107,3 +118,4 @@ class TestDesktopWorkerAbstraction:
         worker_ids = [w.worker_id for w in registered]
         assert "claude_code_desktop" in worker_ids
         assert "cursor_desktop" in worker_ids
+        assert "codex_cli_desktop" in worker_ids

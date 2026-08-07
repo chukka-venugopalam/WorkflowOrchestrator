@@ -55,6 +55,7 @@ from workflow_orchestrator.workers.implementations import (
     AntigravityDesktopWorker,
     FreeBuffDesktopWorker,
     CodexCLIDesktopWorker,
+    OptionalWebDesktopWorker,
 )
 
 
@@ -94,6 +95,7 @@ class Orchestrator:
         self.worker_registry.register_worker(AntigravityDesktopWorker())
         self.worker_registry.register_worker(FreeBuffDesktopWorker())
         self.worker_registry.register_worker(CodexCLIDesktopWorker())
+        self.worker_registry.register_worker(OptionalWebDesktopWorker("chatgpt"))
 
     @classmethod
     def get_instance(cls) -> "Orchestrator":

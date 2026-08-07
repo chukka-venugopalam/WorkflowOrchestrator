@@ -17,6 +17,7 @@ from workflow_orchestrator.providers.implementations import (
     OpenRouterProvider,
     OllamaProvider,
     AzureOpenAIProvider,
+    DeepSeekProvider,
 )
 from workflow_orchestrator.agents.implementations import (
     OpenCodeAgent,
@@ -48,6 +49,18 @@ class TestPhase6Providers:
         manifest = p.manifest()
         assert manifest.id == "openrouter"
         req = ExecutionRequest(goal="Generate python function")
+        res = await p.execute(req)
+        assert res.success is True
+        assert "SIMULATION_MODE" in res.output
+
+    @pytest.mark.asyncio
+    async def test_deepseek_provider_manifest_and_simulation(self):
+        p = DeepSeekProvider()
+        await p.initialize()
+        assert p.simulation_mode is True
+        manifest = p.manifest()
+        assert manifest.id == "deepseek"
+        req = ExecutionRequest(goal="Generate DeepSeek algorithm")
         res = await p.execute(req)
         assert res.success is True
         assert "SIMULATION_MODE" in res.output
