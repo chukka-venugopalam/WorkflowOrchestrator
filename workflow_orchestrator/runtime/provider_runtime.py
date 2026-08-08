@@ -55,6 +55,28 @@ class ProviderRuntime:
             artifact_manager: Optional ArtifactManager for storing artifacts.
             session_manager: Optional SessionManager for session tracking.
         """
+        if provider_registry_runtime is None:
+            try:
+                from workflow_orchestrator.providers.registry import ProviderRegistryRuntime, ProviderRegistry
+                from workflow_orchestrator.providers.implementations import (
+                    ClaudeProvider,
+                    ChatGPTProvider,
+                    GeminiProvider,
+                    DeepSeekProvider,
+                    OpenRouterProvider,
+                    OllamaProvider,
+                    AzureOpenAIProvider,
+                )
+                reg = ProviderRegistry()
+                for p_cls in [ClaudeProvider, ChatGPTProvider, GeminiProvider, DeepSeekProvider, OpenRouterProvider, OllamaProvider, AzureOpenAIProvider]:
+                    try:
+                        reg.register(p_cls())
+                    except Exception:
+                        pass
+                provider_registry_runtime = ProviderRegistryRuntime(registry=reg, event_bus=event_bus)
+            except Exception:
+                pass
+
         self._provider_registry_runtime = provider_registry_runtime
         self._event_bus = event_bus
         self._context_engine = context_engine

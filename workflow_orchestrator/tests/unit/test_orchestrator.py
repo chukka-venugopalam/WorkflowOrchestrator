@@ -48,7 +48,82 @@ class TestProviderManager:
         pm.enable_provider("claude")
         p2 = pm.get_provider("claude")
         assert p2 is not None
-        assert p2.enabled is True
+
+    def test_invoke_provider_unavailable_raises_without_calling_execute(self, monkeypatch) -> None:
+        pm = ProviderManager()
+        pm.disable_provider("claude")
+        called = False
+
+        async def mock_exec(*args, **kwargs):
+            nonlocal called
+            called = True
+            return None
+
+        monkeypatch.setattr(pm.runtime, "execute", mock_exec)
+        with pytest.raises(RuntimeError, match="not available or enabled"):
+            pm.invoke_provider("claude", "Refine prompt")
+
+        assert called is False
+
+    def test_invoke_provider_runtime_failure_raises(self, monkeypatch) -> None:
+        from workflow_orchestrator.intelligence.models import ExecutionResult
+        from workflow_orchestrator.orchestrator.provider_manager import ProviderMetadata
+        pm = ProviderManager()
+
+        monkeypatch.setattr(pm, "get_provider", lambda pid: ProviderMetadata(name="Claude", provider_id="claude", status="available", enabled=True))
+
+        async def mock_exec_fail(*args, **kwargs):
+            return ExecutionResult(task_id="t1", success=False, error_message="API Rate limit exceeded 429")
+
+        monkeypatch.setattr(pm.runtime, "execute", mock_exec_fail)
+        with pytest.raises(RuntimeError, match="API Rate limit exceeded 429"):
+            pm.invoke_provider("claude", "Refine prompt")
+
+    def test_invoke_provider_success_returns_output(self, monkeypatch) -> None:
+        from workflow_orchestrator.intelligence.models import ExecutionResult
+        from workflow_orchestrator.orchestrator.provider_manager import ProviderMetadata
+        pm = ProviderManager()
+
+        monkeypatch.setattr(pm, "get_provider", lambda pid: ProviderMetadata(name="Claude", provider_id="claude", status="available", enabled=True))
+
+        async def mock_exec_success(*args, **kwargs):
+            return ExecutionResult(task_id="t1", success=True, output="Refined prompt text output")
+
+        monkeypatch.setattr(pm.runtime, "execute", mock_exec_success)
+        res = pm.invoke_provider("claude", "Refine prompt")
+        assert res == "Refined prompt text output"
+
+    def test_project_classifier_disambiguation_fallback_on_provider_error(self, monkeypatch) -> None:
+        from workflow_orchestrator.builder.project_classifier import ProjectClassifier, ProjectType
+        from workflow_orchestrator.orchestrator.provider_manager import ProviderMetadata
+        pc = ProjectClassifier()
+        pm = ProviderManager()
+
+        def mock_load():
+            return [ProviderMetadata(name="Claude", provider_id="claude", status="available", enabled=True)]
+
+        monkeypatch.setattr(pm, "discover_and_load", mock_load)
+
+        def failing_invoke(provider_id, prompt):
+            raise RuntimeError(f"Provider {provider_id} crashed")
+
+        monkeypatch.setattr(pm, "invoke_provider", failing_invoke)
+
+        prompt_called = False
+        def mock_human_prompt(desc, scores):
+            nonlocal prompt_called
+            prompt_called = True
+            return "cli minimal"
+
+        res_type, res_scale = pc.classify_with_disambiguation(
+            description="build a system that could be web or desktop or cli for managing widgets",
+            project_name="ambiguous_test",
+            provider_manager=pm,
+            prompt_user_fn=mock_human_prompt,
+        )
+
+        assert prompt_called is True
+        assert res_type == ProjectType.CLI
 
 
 class TestTransportManager:

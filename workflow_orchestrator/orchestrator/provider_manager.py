@@ -201,3 +201,48 @@ class ProviderManager:
     def list_enabled(self) -> List[ProviderMetadata]:
         """Return all enabled providers."""
         return [p for p in self.discover_and_load() if p.enabled]
+
+    def invoke_provider(self, provider_id: str, prompt: str, timeout_seconds: float = 60.0) -> str:
+        """Synchronously ask a provider to refine/respond to a prompt. Returns the
+        raw text response, or raises on failure — callers decide the fallback."""
+        import asyncio
+        from workflow_orchestrator.intelligence.models import ExecutionRequest
+
+        # Check availability first
+        prov = self.get_provider(provider_id)
+        if not prov or prov.status != "available" or not prov.enabled:
+            raise RuntimeError(f"Provider '{provider_id}' is not available or enabled.")
+
+        # Map provider ID alias to real runtime target ID if mapped
+        target_id = provider_id
+        for candidate in self.PROVIDER_ID_MAP.get(provider_id.lower(), [provider_id]):
+            target_id = candidate
+            break
+
+        request = ExecutionRequest(goal=prompt, max_tokens=2048)
+
+        def _run_async() -> Any:
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+
+            coro = self.runtime.execute(provider_id=target_id, request=request)
+            if loop and loop.is_running():
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                    return pool.submit(asyncio.run, coro).result(timeout=timeout_seconds)
+            else:
+                return asyncio.run(coro)
+
+        result = _run_async()
+
+        if not result or not getattr(result, "success", False):
+            err_msg = getattr(result, "error_message", "") or getattr(result, "error", "") or f"Provider '{provider_id}' execution failed."
+            raise RuntimeError(err_msg)
+
+        output = getattr(result, "output", "")
+        if not output:
+            raise RuntimeError(f"Provider '{provider_id}' returned empty output.")
+
+        return output

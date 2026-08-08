@@ -278,31 +278,26 @@ class ProjectClassifier:
                 providers = provider_manager.discover_and_load()
                 avail = [p for p in providers if p.status == "available" or getattr(p, "api_key_configured", False)]
                 if avail:
-                    prov = avail[0]
                     prompt = (
                         f"Given this project description: '{description}', reply with exactly one project type from this fixed list: "
                         "[web, mobile, desktop, cli, ai, ml, embedded, robotics, research, education, enterprise, game, api, library, infrastructure, hybrid] "
                         "and one scale from [minimal, standard, large]. Reply with only those two words separated by a space."
                     )
-                    # NOTE: real provider invocation is not implemented yet
-                    # (planned for Phase 3). Until then this always falls
-                    # through to the human-prompt fallback below.
-                    resp_text = ""
-                    logger.info(
-                        "AI-assisted classification not yet implemented — "
-                        "falling through to human clarification prompt"
-                    )
-
-                    parsed_type, parsed_scale = self._parse_disambiguation_response(resp_text)
-                    if parsed_type != ProjectType.UNKNOWN:
-                        logger.info(
-                            "Rule-based classification inconclusive (scores: %s) — delegated disambiguation to provider '%s' (result: %s/%s)",
-                            scores_str,
-                            prov.name,
-                            parsed_type.value,
-                            parsed_scale.value,
-                        )
-                        return parsed_type, parsed_scale
+                    for prov in avail:
+                        try:
+                            resp_text = provider_manager.invoke_provider(prov.provider_id, prompt)
+                            parsed_type, parsed_scale = self._parse_disambiguation_response(resp_text)
+                            if parsed_type != ProjectType.UNKNOWN:
+                                logger.info(
+                                    "Rule-based classification inconclusive (scores: %s) — delegated disambiguation to provider '%s' (result: %s/%s)",
+                                    scores_str,
+                                    prov.name,
+                                    parsed_type.value,
+                                    parsed_scale.value,
+                                )
+                                return parsed_type, parsed_scale
+                        except Exception as exc:
+                            logger.warning("Provider '%s' disambiguation attempt failed: %s — trying next candidate", prov.provider_id, exc)
             except Exception as exc:
                 logger.warning("Provider disambiguation attempt failed: %s", exc)
 
