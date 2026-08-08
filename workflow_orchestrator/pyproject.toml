@@ -32,6 +32,11 @@ dependencies = [
     "rich>=13.0",
     "typer>=0.9.0",
     "apscheduler>=3.10.0",
+    "pywinauto>=0.6.9",
+    "pyautogui>=0.9.54",
+    "mss>=10.0.0",
+    "pytesseract>=0.3.10",
+    "pillow>=10.0.0",
 ]
 
 [project.optional-dependencies]

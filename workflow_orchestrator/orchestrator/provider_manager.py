@@ -227,8 +227,7 @@ class ProviderManager:
             from workflow_orchestrator.integrations.transports.desktop_terminal_transport import DesktopTerminalTransport
             executable = det.path or provider_id
             term_transport = DesktopTerminalTransport(executable_name=executable)
-            cli_timeout = min(timeout_seconds, 5.0)
-            output = term_transport.send_prompt(prompt, timeout_seconds=cli_timeout)
+            output = term_transport.send_prompt(prompt, timeout_seconds=timeout_seconds)
             if not output or output.strip().startswith(("Error", "Failed", "[Error]")):
                 raise RuntimeError(output or f"CLI transport '{executable}' returned empty/error output")
             return output
@@ -246,9 +245,14 @@ class ProviderManager:
 
         # 4. Handle Desktop GUI app transport
         elif transport == "desktop":
-            raise NotImplementedError(
-                f"Response capture from GUI application windows is not implemented for 'desktop' transport provider '{provider_id}'"
-            )
+            from workflow_orchestrator.integrations.transports.desktop_ui_transport import DesktopUITransport
+            target_title = det.name or provider_id
+            ui_transport = DesktopUITransport(target_window_title=target_title)
+            captured_text, metadata = ui_transport.capture_response(prompt, timeout_seconds=timeout_seconds)
+            if not captured_text or not captured_text.strip():
+                raise RuntimeError(f"Desktop GUI capture for '{provider_id}' returned empty text")
+            logger.info("Successfully captured response from desktop GUI app '%s' via %s", provider_id, metadata.get("capture_method"))
+            return captured_text
 
         else:
             raise RuntimeError(f"Unsupported provider transport type '{transport}' for provider '{provider_id}'")

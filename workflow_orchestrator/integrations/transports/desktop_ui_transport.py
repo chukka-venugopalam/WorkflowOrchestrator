@@ -70,11 +70,109 @@ class DesktopUITransport:
             logger.error(f"UI Automation dispatch error for '{self.target_window_title}': {e}")
             return False
 
-    def capture_editor_diff(self, project_root: Path) -> List[Path]:
-        """Capture modified workspace files following IDE AI edit generation."""
-        modified_files = []
-        if project_root.exists():
-            for p in project_root.rglob("*"):
-                if p.is_file() and not any(part.startswith(".") for part in p.parts):
-                    modified_files.append(p)
-        return modified_files[:10]
+    def capture_response(self, prompt: str, timeout_seconds: float = 30.0) -> tuple[str, dict[str, str]]:
+        """Dispatch prompt and capture response from desktop GUI app via 3-tier fallback chain:
+        1. Accessibility Tree (pywinauto/uiautomation) -> metadata={"capture_method": "accessibility_tree"}
+        2. Clipboard Readback (pyautogui + pyperclip) -> metadata={"capture_method": "clipboard"}
+        3. OCR Screenshot (pytesseract + mss/ImageGrab) -> metadata={"capture_method": "ocr"}
+
+        Raises RuntimeError if all 3 tiers fail.
+        """
+        # Ensure window is focused & prompt dispatched
+        dispatched = self.dispatch_prompt_to_ide(prompt)
+        if not dispatched:
+            raise RuntimeError(f"Could not focus desktop GUI window for '{self.target_window_title}'")
+
+        time.sleep(1.5)  # Allow initial UI rendering/dispatch
+
+        # ------------------------------------------------------------------
+        # Tier 1: Accessibility Tree (pywinauto / UI Automation)
+        # ------------------------------------------------------------------
+        try:
+            import pywinauto
+            app = pywinauto.Application(backend="uia").connect(title_re=f".*{self.target_window_title}.*", timeout=3)
+            win = app.top_window()
+            
+            # Poll for text stabilization
+            prev_text = ""
+            stable_count = 0
+            start_time = time.time()
+
+            while time.time() - start_time < timeout_seconds:
+                curr_text = win.window_text() or ""
+                # Search edit / document controls if top window text is short
+                if not curr_text or len(curr_text) < 10:
+                    try:
+                        controls = win.descendants(control_type="Edit") + win.descendants(control_type="Document")
+                        texts = [c.window_text() for c in controls if c.window_text()]
+                        if texts:
+                            curr_text = "\n".join(texts)
+                    except Exception:
+                        pass
+
+                if curr_text and curr_text == prev_text and curr_text.strip() != prompt.strip():
+                    stable_count += 1
+                    if stable_count >= 2:
+                        logger.info("Captured GUI response via accessibility_tree (%d bytes)", len(curr_text))
+                        return curr_text, {"capture_method": "accessibility_tree"}
+                else:
+                    stable_count = 0
+                    prev_text = curr_text
+
+                time.sleep(1.0)
+        except Exception as tier1_err:
+            logger.warning("Tier 1 (accessibility_tree) capture failed for '%s': %s — trying Tier 2 (clipboard)", self.target_window_title, tier1_err)
+
+        # ------------------------------------------------------------------
+        # Tier 2: Clipboard Readback (pyautogui + pyperclip)
+        # ------------------------------------------------------------------
+        try:
+            import pyautogui
+            import pyperclip
+
+            pyautogui.FAILSAFE = False
+            # Select all in active focused window and copy to clipboard
+            pyautogui.hotkey("ctrl", "a")
+            time.sleep(0.2)
+            pyautogui.hotkey("ctrl", "c")
+            time.sleep(0.5)
+
+            clip_text = pyperclip.paste()
+            if clip_text and clip_text.strip() and clip_text.strip() != prompt.strip():
+                logger.info("Captured GUI response via clipboard (%d bytes)", len(clip_text))
+                return clip_text, {"capture_method": "clipboard"}
+            else:
+                logger.warning("Tier 2 (clipboard) captured empty or matching prompt text")
+        except Exception as tier2_err:
+            logger.warning("Tier 2 (clipboard) capture failed for '%s': %s — trying Tier 3 (OCR)", self.target_window_title, tier2_err)
+
+        # ------------------------------------------------------------------
+        # Tier 3: OCR Screenshot (mss / PIL + pytesseract)
+        # ------------------------------------------------------------------
+        try:
+            import pytesseract
+            from PIL import Image, ImageGrab
+
+            img = None
+            try:
+                import mss
+                with mss.MSS() as sct:
+                    monitor = sct.monitors[1] if len(sct.monitors) > 1 else sct.monitors[0]
+                    sct_img = sct.grab(monitor)
+                    img = Image.frombytes("RGB", sct_img.size, sct_img.bgra, "raw", "BGRX")
+            except Exception:
+                img = ImageGrab.grab()
+
+            if img is not None:
+                ocr_text = pytesseract.image_to_string(img)
+                if ocr_text and ocr_text.strip() and len(ocr_text.strip()) > 5:
+                    logger.info("Captured GUI response via OCR (%d bytes)", len(ocr_text))
+                    return ocr_text.strip(), {"capture_method": "ocr"}
+        except Exception as tier3_err:
+            logger.warning("Tier 3 (OCR) capture failed for '%s': %s", self.target_window_title, tier3_err)
+
+        # All 3 Tiers Failed
+        raise RuntimeError(
+            f"Failed to capture response from desktop GUI app '{self.target_window_title}' "
+            "via accessibility_tree, clipboard, or OCR"
+        )

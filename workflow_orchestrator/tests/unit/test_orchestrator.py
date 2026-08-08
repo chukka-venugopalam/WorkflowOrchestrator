@@ -76,74 +76,78 @@ class TestProviderManager:
         with pytest.raises(RuntimeError, match="not available"):
             pm.invoke_provider("claude", "Refine prompt")
 
-    def test_invoke_provider_transport_failure_raises(self, monkeypatch) -> None:
+    def test_invoke_provider_desktop_capture_success_returns_output(self, monkeypatch) -> None:
         from workflow_orchestrator.integrations.provider_detector import DetectedProvider
         pm = ProviderManager()
 
         def mock_detect():
-            return [DetectedProvider(provider_id="opencode", name="OpenCode", available=True, transport="cli", path="opencode")]
+            return [DetectedProvider(provider_id="anthropic.claude", name="Claude", available=True, transport="desktop", path="claude.exe")]
 
         monkeypatch.setattr(pm.detector, "detect_all", mock_detect)
 
-        class FailingTerminalTransport:
-            def __init__(self, executable_name: str):
+        class SuccessUITransport:
+            def __init__(self, target_window_title: str):
                 pass
-            def send_prompt(self, prompt: str, timeout_seconds: float = 60.0) -> str:
-                return "Error: CLI process timed out"
+            def capture_response(self, prompt: str, timeout_seconds: float = 60.0) -> tuple[str, dict[str, str]]:
+                return "web standard", {"capture_method": "accessibility_tree"}
 
-        monkeypatch.setattr("workflow_orchestrator.integrations.transports.desktop_terminal_transport.DesktopTerminalTransport", FailingTerminalTransport)
-        with pytest.raises(RuntimeError, match="Error"):
-            pm.invoke_provider("opencode", "Refine prompt")
-
-    def test_invoke_provider_transport_success_returns_output(self, monkeypatch) -> None:
-        from workflow_orchestrator.integrations.provider_detector import DetectedProvider
-        pm = ProviderManager()
-
-        def mock_detect():
-            return [DetectedProvider(provider_id="opencode", name="OpenCode", available=True, transport="cli", path="opencode")]
-
-        monkeypatch.setattr(pm.detector, "detect_all", mock_detect)
-
-        class SuccessTerminalTransport:
-            def __init__(self, executable_name: str):
-                pass
-            def send_prompt(self, prompt: str, timeout_seconds: float = 60.0) -> str:
-                return "web standard"
-
-        monkeypatch.setattr("workflow_orchestrator.integrations.transports.desktop_terminal_transport.DesktopTerminalTransport", SuccessTerminalTransport)
-        res = pm.invoke_provider("opencode", "Refine prompt")
+        monkeypatch.setattr("workflow_orchestrator.integrations.transports.desktop_ui_transport.DesktopUITransport", SuccessUITransport)
+        res = pm.invoke_provider("anthropic.claude", "Refine prompt")
         assert res == "web standard"
 
-    def test_project_classifier_disambiguation_fallback_on_provider_error(self, monkeypatch) -> None:
+    def test_invoke_provider_desktop_capture_failure_raises(self, monkeypatch) -> None:
+        from workflow_orchestrator.integrations.provider_detector import DetectedProvider
+        pm = ProviderManager()
+
+        def mock_detect():
+            return [DetectedProvider(provider_id="anthropic.claude", name="Claude", available=True, transport="desktop", path="claude.exe")]
+
+        monkeypatch.setattr(pm.detector, "detect_all", mock_detect)
+
+        class FailingUITransport:
+            def __init__(self, target_window_title: str):
+                pass
+            def capture_response(self, prompt: str, timeout_seconds: float = 60.0) -> tuple[str, dict[str, str]]:
+                raise RuntimeError("Failed to capture response from desktop GUI app via accessibility_tree, clipboard, or OCR")
+
+        monkeypatch.setattr("workflow_orchestrator.integrations.transports.desktop_ui_transport.DesktopUITransport", FailingUITransport)
+        with pytest.raises(RuntimeError, match="accessibility_tree"):
+            pm.invoke_provider("anthropic.claude", "Refine prompt")
+
+    def test_project_classifier_excludes_coding_agents_from_disambiguation(self, monkeypatch) -> None:
         from workflow_orchestrator.builder.project_classifier import ProjectClassifier, ProjectType
         from workflow_orchestrator.integrations.provider_detector import DetectedProvider
         pc = ProjectClassifier()
         pm = ProviderManager()
 
+        # Provide both coding agent and conversational providers
         def mock_detect():
-            return [DetectedProvider(provider_id="opencode", name="OpenCode", available=True, transport="cli", path="opencode")]
+            return [
+                DetectedProvider(provider_id="opencode", name="OpenCode", available=True, transport="cli", path="opencode"),
+                DetectedProvider(provider_id="freebuff", name="FreeBuff", available=True, transport="cli", path="freebuff"),
+                DetectedProvider(provider_id="antigravity", name="Antigravity", available=True, transport="desktop", path="antigravity"),
+            ]
 
         monkeypatch.setattr(pm.detector, "detect_all", mock_detect)
 
-        def failing_invoke(provider_id, prompt):
-            raise RuntimeError(f"Provider {provider_id} crashed")
+        attempted_providers = []
+        def spy_invoke(provider_id, prompt):
+            attempted_providers.append(provider_id)
+            raise RuntimeError("Failed")
 
-        monkeypatch.setattr(pm, "invoke_provider", failing_invoke)
-
-        prompt_called = False
-        def mock_human_prompt(desc, scores):
-            nonlocal prompt_called
-            prompt_called = True
-            return "cli minimal"
+        monkeypatch.setattr(pm, "invoke_provider", spy_invoke)
 
         res_type, res_scale = pc.classify_with_disambiguation(
-            description="build a system that could be web or desktop or cli for managing widgets",
-            project_name="ambiguous_test",
+            description="a system that could be web or desktop or cli",
+            project_name="test_filter",
             provider_manager=pm,
-            prompt_user_fn=mock_human_prompt,
+            prompt_user_fn=lambda d, s: "cli minimal",
         )
 
-        assert prompt_called is True
+        # Assert opencode, freebuff, and antigravity were NEVER attempted for disambiguation
+        assert "opencode" not in attempted_providers
+        assert "freebuff" not in attempted_providers
+        assert "antigravity" not in attempted_providers
         assert res_type == ProjectType.CLI
 
 

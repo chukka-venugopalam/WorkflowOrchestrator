@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pytest
 from workflow_orchestrator.builder.project_builder import ProjectBuilder, ProjectBuilderConfig
 from workflow_orchestrator.builder.data_models import BuilderConfig
 
@@ -10,7 +11,15 @@ class TestProjectBuilder:
     """Tests for ProjectBuilder."""
 
     def setup_method(self) -> None:
+        self.mp = pytest.MonkeyPatch()
+        self.mp.setattr(
+            "workflow_orchestrator.integrations.transports.desktop_terminal_transport.DesktopTerminalTransport.send_prompt",
+            lambda self, prompt, **kw: "Mocked unit test response",
+        )
         self.builder = ProjectBuilder()
+
+    def teardown_method(self) -> None:
+        self.mp.undo()
 
     def test_build_returns_result(self) -> None:
         result = self.builder.build("Build a simple web app")

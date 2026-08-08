@@ -29,6 +29,26 @@ from workflow_orchestrator.core.event_bus import Event, EventBus
 
 logger = logging.getLogger(__name__)
 
+CONVERSATIONAL_PROVIDERS: set[str] = {
+    "anthropic.claude",
+    "openai.chatgpt",
+    "google.gemini",
+    "github.copilot",
+    "openrouter",
+    "deepseek",
+}
+
+CODING_AGENT_PROVIDERS: set[str] = {
+    "anthropic.claude_code",
+    "opencode",
+    "freebuff",
+    "antigravity",
+    "codex",
+    "cursor",
+    "continue",
+    "ollama",
+}
+
 
 @dataclass
 class DetectedProvider:
@@ -52,6 +72,16 @@ class DetectedProvider:
     detected_from: str = ""
     available: bool = False
     unavailable_reason: str = ""
+
+    def is_conversational(self) -> bool:
+        """Check if this provider is a lightweight conversational chat provider suitable for prompt refinement/disambiguation."""
+        pid = self.provider_id.lower()
+        if pid in CONVERSATIONAL_PROVIDERS:
+            return True
+        for p in CONVERSATIONAL_PROVIDERS:
+            if p.split(".")[-1] == pid:
+                return True
+        return False
 
 
 class ProviderDetector:

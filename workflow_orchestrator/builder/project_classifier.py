@@ -276,7 +276,7 @@ class ProjectClassifier:
         if provider_manager is not None:
             try:
                 detected = provider_manager.detector.detect_all()
-                avail = [p for p in detected if p.available]
+                avail = [p for p in detected if p.available and getattr(p, "is_conversational", lambda: True)()]
                 if avail:
                     prompt = (
                         f"Given this project description: '{description}', reply with exactly one project type from this fixed list: "
