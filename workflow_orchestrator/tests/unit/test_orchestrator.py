@@ -65,44 +65,65 @@ class TestProviderManager:
 
         assert called is False
 
-    def test_invoke_provider_runtime_failure_raises(self, monkeypatch) -> None:
-        from workflow_orchestrator.intelligence.models import ExecutionResult
-        from workflow_orchestrator.orchestrator.provider_manager import ProviderMetadata
+    def test_invoke_provider_unavailable_raises_without_calling_execute(self, monkeypatch) -> None:
+        from workflow_orchestrator.integrations.provider_detector import DetectedProvider
         pm = ProviderManager()
 
-        monkeypatch.setattr(pm, "get_provider", lambda pid: ProviderMetadata(name="Claude", provider_id="claude", status="available", enabled=True))
+        def mock_detect():
+            return [DetectedProvider(provider_id="claude", name="Claude", available=False, unavailable_reason="Not installed")]
 
-        async def mock_exec_fail(*args, **kwargs):
-            return ExecutionResult(task_id="t1", success=False, error_message="API Rate limit exceeded 429")
-
-        monkeypatch.setattr(pm.runtime, "execute", mock_exec_fail)
-        with pytest.raises(RuntimeError, match="API Rate limit exceeded 429"):
+        monkeypatch.setattr(pm.detector, "detect_all", mock_detect)
+        with pytest.raises(RuntimeError, match="not available"):
             pm.invoke_provider("claude", "Refine prompt")
 
-    def test_invoke_provider_success_returns_output(self, monkeypatch) -> None:
-        from workflow_orchestrator.intelligence.models import ExecutionResult
-        from workflow_orchestrator.orchestrator.provider_manager import ProviderMetadata
+    def test_invoke_provider_transport_failure_raises(self, monkeypatch) -> None:
+        from workflow_orchestrator.integrations.provider_detector import DetectedProvider
         pm = ProviderManager()
 
-        monkeypatch.setattr(pm, "get_provider", lambda pid: ProviderMetadata(name="Claude", provider_id="claude", status="available", enabled=True))
+        def mock_detect():
+            return [DetectedProvider(provider_id="opencode", name="OpenCode", available=True, transport="cli", path="opencode")]
 
-        async def mock_exec_success(*args, **kwargs):
-            return ExecutionResult(task_id="t1", success=True, output="Refined prompt text output")
+        monkeypatch.setattr(pm.detector, "detect_all", mock_detect)
 
-        monkeypatch.setattr(pm.runtime, "execute", mock_exec_success)
-        res = pm.invoke_provider("claude", "Refine prompt")
-        assert res == "Refined prompt text output"
+        class FailingTerminalTransport:
+            def __init__(self, executable_name: str):
+                pass
+            def send_prompt(self, prompt: str, timeout_seconds: float = 60.0) -> str:
+                return "Error: CLI process timed out"
+
+        monkeypatch.setattr("workflow_orchestrator.integrations.transports.desktop_terminal_transport.DesktopTerminalTransport", FailingTerminalTransport)
+        with pytest.raises(RuntimeError, match="Error"):
+            pm.invoke_provider("opencode", "Refine prompt")
+
+    def test_invoke_provider_transport_success_returns_output(self, monkeypatch) -> None:
+        from workflow_orchestrator.integrations.provider_detector import DetectedProvider
+        pm = ProviderManager()
+
+        def mock_detect():
+            return [DetectedProvider(provider_id="opencode", name="OpenCode", available=True, transport="cli", path="opencode")]
+
+        monkeypatch.setattr(pm.detector, "detect_all", mock_detect)
+
+        class SuccessTerminalTransport:
+            def __init__(self, executable_name: str):
+                pass
+            def send_prompt(self, prompt: str, timeout_seconds: float = 60.0) -> str:
+                return "web standard"
+
+        monkeypatch.setattr("workflow_orchestrator.integrations.transports.desktop_terminal_transport.DesktopTerminalTransport", SuccessTerminalTransport)
+        res = pm.invoke_provider("opencode", "Refine prompt")
+        assert res == "web standard"
 
     def test_project_classifier_disambiguation_fallback_on_provider_error(self, monkeypatch) -> None:
         from workflow_orchestrator.builder.project_classifier import ProjectClassifier, ProjectType
-        from workflow_orchestrator.orchestrator.provider_manager import ProviderMetadata
+        from workflow_orchestrator.integrations.provider_detector import DetectedProvider
         pc = ProjectClassifier()
         pm = ProviderManager()
 
-        def mock_load():
-            return [ProviderMetadata(name="Claude", provider_id="claude", status="available", enabled=True)]
+        def mock_detect():
+            return [DetectedProvider(provider_id="opencode", name="OpenCode", available=True, transport="cli", path="opencode")]
 
-        monkeypatch.setattr(pm, "discover_and_load", mock_load)
+        monkeypatch.setattr(pm.detector, "detect_all", mock_detect)
 
         def failing_invoke(provider_id, prompt):
             raise RuntimeError(f"Provider {provider_id} crashed")

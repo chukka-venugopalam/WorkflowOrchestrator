@@ -275,8 +275,8 @@ class ProjectClassifier:
 
         if provider_manager is not None:
             try:
-                providers = provider_manager.discover_and_load()
-                avail = [p for p in providers if p.status == "available" or getattr(p, "api_key_configured", False)]
+                detected = provider_manager.detector.detect_all()
+                avail = [p for p in detected if p.available]
                 if avail:
                     prompt = (
                         f"Given this project description: '{description}', reply with exactly one project type from this fixed list: "
@@ -289,7 +289,7 @@ class ProjectClassifier:
                             parsed_type, parsed_scale = self._parse_disambiguation_response(resp_text)
                             if parsed_type != ProjectType.UNKNOWN:
                                 logger.info(
-                                    "Rule-based classification inconclusive (scores: %s) — delegated disambiguation to provider '%s' (result: %s/%s)",
+                                    "Rule-based classification inconclusive (scores: %s) — delegated disambiguation to desktop provider '%s' (result: %s/%s)",
                                     scores_str,
                                     prov.name,
                                     parsed_type.value,
@@ -297,9 +297,9 @@ class ProjectClassifier:
                                 )
                                 return parsed_type, parsed_scale
                         except Exception as exc:
-                            logger.warning("Provider '%s' disambiguation attempt failed: %s — trying next candidate", prov.provider_id, exc)
+                            logger.warning("Desktop provider '%s' disambiguation attempt failed: %s — trying next candidate", prov.provider_id, exc)
             except Exception as exc:
-                logger.warning("Provider disambiguation attempt failed: %s", exc)
+                logger.warning("Desktop provider disambiguation attempt failed: %s", exc)
 
         # Step 4: Fallback to Human User Prompt if no provider available or parsing failed
         if prompt_user_fn is not None:

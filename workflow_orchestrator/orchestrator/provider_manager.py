@@ -203,46 +203,52 @@ class ProviderManager:
         return [p for p in self.discover_and_load() if p.enabled]
 
     def invoke_provider(self, provider_id: str, prompt: str, timeout_seconds: float = 60.0) -> str:
-        """Synchronously ask a provider to refine/respond to a prompt. Returns the
-        raw text response, or raises on failure — callers decide the fallback."""
-        import asyncio
-        from workflow_orchestrator.intelligence.models import ExecutionRequest
+        """Ask a real installed desktop AI (CLI/browser/app) to respond to a
+        prompt using the desktop transport layer. Raises on failure — callers decide fallback."""
+        # 1. Lookup detected provider from detector
+        detected_providers = self.detector.detect_all()
+        det = None
+        for p in detected_providers:
+            if p.provider_id.lower() == provider_id.lower() or p.name.lower() == provider_id.lower():
+                det = p
+                break
+            if "." in p.provider_id and p.provider_id.split(".")[-1].lower() == provider_id.lower():
+                det = p
+                break
 
-        # Check availability first
-        prov = self.get_provider(provider_id)
-        if not prov or prov.status != "available" or not prov.enabled:
-            raise RuntimeError(f"Provider '{provider_id}' is not available or enabled.")
+        if not det or not det.available:
+            reason = getattr(det, "unavailable_reason", "") or f"Provider '{provider_id}' is not installed or available on local system."
+            raise RuntimeError(f"Provider '{provider_id}' is not available: {reason}")
 
-        # Map provider ID alias to real runtime target ID if mapped
-        target_id = provider_id
-        for candidate in self.PROVIDER_ID_MAP.get(provider_id.lower(), [provider_id]):
-            target_id = candidate
-            break
+        transport = (det.transport or "").lower()
 
-        request = ExecutionRequest(goal=prompt, max_tokens=2048)
+        # 2. Handle CLI transport
+        if transport == "cli":
+            from workflow_orchestrator.integrations.transports.desktop_terminal_transport import DesktopTerminalTransport
+            executable = det.path or provider_id
+            term_transport = DesktopTerminalTransport(executable_name=executable)
+            cli_timeout = min(timeout_seconds, 5.0)
+            output = term_transport.send_prompt(prompt, timeout_seconds=cli_timeout)
+            if not output or output.strip().startswith(("Error", "Failed", "[Error]")):
+                raise RuntimeError(output or f"CLI transport '{executable}' returned empty/error output")
+            return output
 
-        def _run_async() -> Any:
-            try:
-                loop = asyncio.get_running_loop()
-            except RuntimeError:
-                loop = None
+        # 3. Handle Browser transport
+        elif transport == "browser":
+            from workflow_orchestrator.integrations.transports.desktop_browser_transport import DesktopBrowserTransport
+            browser_transport = DesktopBrowserTransport(portal_name=provider_id)
+            if not browser_transport.is_available():
+                raise RuntimeError(f"Playwright browser transport not installed for '{provider_id}'")
+            output = browser_transport.send_prompt(prompt)
+            if not output or output.strip().startswith(("Error", "Failed", "[Error]")):
+                raise RuntimeError(output or f"Browser transport '{provider_id}' returned empty/error output")
+            return output
 
-            coro = self.runtime.execute(provider_id=target_id, request=request)
-            if loop and loop.is_running():
-                import concurrent.futures
-                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-                    return pool.submit(asyncio.run, coro).result(timeout=timeout_seconds)
-            else:
-                return asyncio.run(coro)
+        # 4. Handle Desktop GUI app transport
+        elif transport == "desktop":
+            raise NotImplementedError(
+                f"Response capture from GUI application windows is not implemented for 'desktop' transport provider '{provider_id}'"
+            )
 
-        result = _run_async()
-
-        if not result or not getattr(result, "success", False):
-            err_msg = getattr(result, "error_message", "") or getattr(result, "error", "") or f"Provider '{provider_id}' execution failed."
-            raise RuntimeError(err_msg)
-
-        output = getattr(result, "output", "")
-        if not output:
-            raise RuntimeError(f"Provider '{provider_id}' returned empty output.")
-
-        return output
+        else:
+            raise RuntimeError(f"Unsupported provider transport type '{transport}' for provider '{provider_id}'")
