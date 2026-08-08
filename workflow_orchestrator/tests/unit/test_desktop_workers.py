@@ -110,6 +110,19 @@ class TestDesktopWorkerAbstraction:
         assert res.success is False
         assert "not found" in res.error_message.lower() or "not found" in res.output_text.lower()
 
+    def test_optional_web_worker_simulated_failure_returns_false(self):
+        worker = OptionalWebDesktopWorker("chatgpt")
+
+        class FailingTransport:
+            def send_prompt(self, prompt: str) -> str:
+                return "Error: Playwright browser crash or login failed"
+
+        worker.browser_transport = FailingTransport()
+        worker.discover = lambda: True
+        res = worker.execute({"prompt": "Test Prompt"})
+        assert res.success is False
+        assert "Error" in res.output_text or "Error" in res.error_message
+
     def test_orchestrator_worker_registry_integration(self):
         orch = Orchestrator.get_instance()
         assert orch.worker_registry is not None
