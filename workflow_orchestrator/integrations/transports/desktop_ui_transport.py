@@ -48,6 +48,8 @@ class DesktopUITransport:
                 import ctypes
                 user32 = ctypes.windll.user32
 
+                self.last_matched_hwnd = None
+
                 def _enum_cb(hwnd, extra):
                     if user32.IsWindowVisible(hwnd):
                         if hasattr(user32, "IsHungAppWindow") and user32.IsHungAppWindow(hwnd):
@@ -57,6 +59,7 @@ class DesktopUITransport:
                             buff = ctypes.create_unicode_buffer(length + 1)
                             user32.GetWindowTextW(hwnd, buff, length + 1)
                             if self.target_window_title.lower() in buff.value.lower():
+                                self.last_matched_hwnd = hwnd
                                 user32.ShowWindow(hwnd, 9)  # SW_RESTORE
                                 user32.SetForegroundWindow(hwnd)
                                 return False
@@ -90,8 +93,23 @@ class DesktopUITransport:
         # ------------------------------------------------------------------
         try:
             import pywinauto
-            app = pywinauto.Application(backend="uia").connect(title_re=f".*{self.target_window_title}.*", timeout=3)
-            win = app.top_window()
+            import re
+            app = None
+            if getattr(self, "last_matched_hwnd", None):
+                try:
+                    app = pywinauto.Application(backend="uia").connect(handle=self.last_matched_hwnd, timeout=3)
+                except Exception:
+                    try:
+                        app = pywinauto.Application(backend="win32").connect(handle=self.last_matched_hwnd, timeout=3)
+                    except Exception:
+                        app = None
+            if app is None:
+                try:
+                    app = pywinauto.Application(backend="uia").connect(title_re=f"(?i).*{re.escape(self.target_window_title)}.*", visible_only=True, found_index=0, timeout=3)
+                except Exception:
+                    app = pywinauto.Application(backend="win32").connect(title_re=f"(?i).*{re.escape(self.target_window_title)}.*", visible_only=True, found_index=0, timeout=3)
+            
+            win = app.window(handle=self.last_matched_hwnd) if getattr(self, "last_matched_hwnd", None) else app.top_window()
             
             # Poll for text stabilization
             prev_text = ""
@@ -99,25 +117,26 @@ class DesktopUITransport:
             start_time = time.time()
 
             while time.time() - start_time < timeout_seconds:
-                curr_text = win.window_text() or ""
-                # Search edit / document controls if top window text is short
-                if not curr_text or len(curr_text) < 10:
-                    try:
-                        controls = win.descendants(control_type="Edit") + win.descendants(control_type="Document")
-                        texts = [c.window_text() for c in controls if c.window_text()]
-                        if texts:
-                            curr_text = "\n".join(texts)
-                    except Exception:
-                        pass
+                descendant_text = ""
+                try:
+                    controls = win.descendants(control_type="Edit") + win.descendants(control_type="Document") + win.descendants(control_type="Text")
+                    texts = [c.window_text() for c in controls if c.window_text() and c.window_text().strip() != prompt.strip()]
+                    if texts:
+                        descendant_text = "\n".join(texts)
+                except Exception:
+                    pass
 
-                if curr_text and curr_text == prev_text and curr_text.strip() != prompt.strip():
-                    stable_count += 1
-                    if stable_count >= 2:
-                        logger.info("Captured GUI response via accessibility_tree (%d bytes)", len(curr_text))
-                        return curr_text, {"capture_method": "accessibility_tree"}
-                else:
-                    stable_count = 0
-                    prev_text = curr_text
+                curr_text = descendant_text if descendant_text.strip() else (win.window_text() or "")
+
+                if curr_text and curr_text.strip() and curr_text.strip() != prompt.strip():
+                    if curr_text == prev_text:
+                        stable_count += 1
+                        if stable_count >= 2:
+                            logger.info("Captured GUI response via accessibility_tree (%d bytes)", len(curr_text))
+                            return curr_text, {"capture_method": "accessibility_tree"}
+                    else:
+                        stable_count = 0
+                        prev_text = curr_text
 
                 time.sleep(1.0)
         except Exception as tier1_err:
@@ -131,6 +150,10 @@ class DesktopUITransport:
             import pyperclip
 
             pyautogui.FAILSAFE = False
+            # Clear clipboard first to avoid reading stale prompt
+            pyperclip.copy("")
+            time.sleep(0.1)
+
             # Select all in active focused window and copy to clipboard
             pyautogui.hotkey("ctrl", "a")
             time.sleep(0.2)
