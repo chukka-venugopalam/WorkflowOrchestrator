@@ -278,14 +278,16 @@ class ProjectClassifier:
                 detected = provider_manager.detector.detect_all()
                 avail = [p for p in detected if p.available and getattr(p, "is_conversational", lambda: True)()]
                 
-                # Prioritize reliable CLI and Browser providers before Electron Desktop GUI apps
+                # Prioritize CLI -> Browser -> REST API -> Desktop GUI providers
                 def _transport_priority(p):
                     t = getattr(p, "transport", "desktop").lower()
                     if t in ("cli", "terminal"):
                         return 0
-                    elif t in ("browser", "playwright", "rest_api"):
+                    elif t in ("browser", "playwright"):
                         return 1
-                    return 2
+                    elif t in ("rest_api", "api"):
+                        return 2
+                    return 3
 
                 avail = sorted(avail, key=_transport_priority)
                 if avail:
