@@ -277,6 +277,17 @@ class ProjectClassifier:
             try:
                 detected = provider_manager.detector.detect_all()
                 avail = [p for p in detected if p.available and getattr(p, "is_conversational", lambda: True)()]
+                
+                # Prioritize reliable CLI and Browser providers before Electron Desktop GUI apps
+                def _transport_priority(p):
+                    t = getattr(p, "transport", "desktop").lower()
+                    if t in ("cli", "terminal"):
+                        return 0
+                    elif t in ("browser", "playwright", "rest_api"):
+                        return 1
+                    return 2
+
+                avail = sorted(avail, key=_transport_priority)
                 if avail:
                     prompt = (
                         f"Given this project description: '{description}', reply with exactly one project type from this fixed list: "

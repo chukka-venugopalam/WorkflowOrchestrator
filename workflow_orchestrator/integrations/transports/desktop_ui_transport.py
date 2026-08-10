@@ -1,6 +1,11 @@
 """Desktop UI Transport — Windows UI Automation & Clipboard Sync Driver.
 
-Drives desktop IDEs (Cursor IDE, VS Code, GitHub Copilot) via window focus and clipboard automation.
+Drives desktop IDEs (Cursor IDE, VS Code, GitHub Copilot, Claude Desktop, ChatGPT) via window focus and clipboard automation.
+
+NOTE (Known Limitation):
+Best-effort GUI response capture. Electron/Chromium-shell apps (Claude Desktop, ChatGPT Desktop, VS Code)
+omit UI Automation (UIA) renderer element trees by default unless launched as a primary screen-reader process.
+CLI and Browser transports are prioritized for prompt disambiguation and automated reasoning.
 """
 
 from __future__ import annotations
