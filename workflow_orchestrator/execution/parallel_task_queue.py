@@ -3,13 +3,16 @@
 
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 import logging
+import threading
 import time
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from workflow_orchestrator.builder.data_models import ProjectScale
 from workflow_orchestrator.workers.desktop_worker import DesktopWorker, WorkerState, DesktopWorkerTaskResult
 from workflow_orchestrator.workers.worker_registry import DesktopWorkerRegistry
 from workflow_orchestrator.integrations.workspace_observer import WorkspaceObserver
@@ -49,11 +52,21 @@ class ParallelTaskQueue:
         self,
         worker_registry: Optional[DesktopWorkerRegistry] = None,
         workspace_observer: Optional[WorkspaceObserver] = None,
+        project_scale: ProjectScale | str = ProjectScale.STANDARD,
     ) -> None:
         self.worker_registry = worker_registry or DesktopWorkerRegistry()
         self.observer = workspace_observer or WorkspaceObserver()
+        if isinstance(project_scale, str):
+            try:
+                project_scale = ProjectScale(project_scale)
+            except ValueError:
+                project_scale = ProjectScale.STANDARD
+        self.project_scale: ProjectScale = project_scale
+        self.pinned_worker_id: Optional[str] = None
         self.tasks: Dict[str, OrchestrationTaskNode] = {}
         self.execution_log: List[Dict[str, Any]] = []
+        self._worker_assignment_index: int = 0
+        self._lock = threading.Lock()
 
     def add_task(
         self,
@@ -102,13 +115,23 @@ class ParallelTaskQueue:
             if not ready_tasks:
                 break
 
-            for task in ready_tasks:
-                if (time.time() - start_time) > max_total_seconds:
-                    logger.warning(f"Pipeline timeout of {max_total_seconds}s exceeded. Halting task dispatch.")
-                    task.state = TaskProgressState.FAILED
-                    task.error_log = f"Pipeline timeout of {max_total_seconds}s exceeded"
-                    break
-                self._dispatch_and_verify_task(task, workspace_path, start_time)
+            # STANDARD / LARGE scale: dispatch independent ready tasks concurrently
+            if self.project_scale != ProjectScale.MINIMAL and len(ready_tasks) > 1:
+                with ThreadPoolExecutor(max_workers=min(4, len(ready_tasks))) as executor:
+                    futures = [
+                        executor.submit(self._dispatch_and_verify_task, task, workspace_path, start_time)
+                        for task in ready_tasks
+                    ]
+                    for f in futures:
+                        f.result()
+            else:
+                for task in ready_tasks:
+                    if (time.time() - start_time) > max_total_seconds:
+                        logger.warning(f"Pipeline timeout of {max_total_seconds}s exceeded. Halting task dispatch.")
+                        task.state = TaskProgressState.FAILED
+                        task.error_log = f"Pipeline timeout of {max_total_seconds}s exceeded"
+                        break
+                    self._dispatch_and_verify_task(task, workspace_path, start_time)
 
         return {t_id: t.state for t_id, t in self.tasks.items()}
 
@@ -120,6 +143,44 @@ class ParallelTaskQueue:
                 return False
         return True
 
+    def _select_worker(self, task: OrchestrationTaskNode) -> DesktopWorker:
+        """Select worker based on scale-gated execution strategy."""
+        with self._lock:
+            # MINIMAL scale: lock to first pinned worker if valid and available
+            if self.project_scale == ProjectScale.MINIMAL and self.pinned_worker_id:
+                pinned = self.worker_registry.get_worker(self.pinned_worker_id)
+                if pinned and pinned.discover():
+                    return pinned
+
+            # Capability-based worker selection & real discovery filtering
+            eligible_workers = self.worker_registry.find_workers_by_skill(task.required_skill, active_only=True)
+            installed_workers = [w for w in eligible_workers if w.discover()]
+
+            if not installed_workers:
+                installed_workers = [w for w in self.worker_registry.list_workers() if w.discover()]
+
+            if not installed_workers:
+                self.worker_registry.discover_and_start_all()
+                installed_workers = self.worker_registry.list_workers()
+
+            if not installed_workers:
+                fallback_worker = DesktopWorker(worker_id="default_desktop_worker", name="Default Desktop Worker")
+                self.worker_registry.register_worker(fallback_worker)
+                installed_workers = [fallback_worker]
+
+            if self.project_scale == ProjectScale.MINIMAL:
+                selected = installed_workers[0]
+                self.pinned_worker_id = selected.worker_id
+                return selected
+
+            # STANDARD / LARGE scale: spread across IDLE matching workers
+            idle_workers = [w for w in installed_workers if getattr(w, "state", WorkerState.IDLE) == WorkerState.IDLE]
+            candidates = idle_workers if idle_workers else installed_workers
+
+            selected = candidates[self._worker_assignment_index % len(candidates)]
+            self._worker_assignment_index += 1
+            return selected
+
     def _dispatch_and_verify_task(
         self,
         task: OrchestrationTaskNode,
@@ -129,21 +190,7 @@ class ParallelTaskQueue:
         """Dispatch task to best available worker, verify output, and handle retries on failure."""
         task.state = TaskProgressState.RUNNING
 
-        # 1. Capability-based worker selection & real discovery filtering
-        eligible_workers = self.worker_registry.find_workers_by_skill(task.required_skill, active_only=True)
-        installed_workers = [w for w in eligible_workers if w.discover()]
-
-        if not installed_workers:
-            # Fallback to any installed desktop worker
-            installed_workers = [w for w in self.worker_registry.list_workers() if w.discover()]
-
-        if not installed_workers:
-            # If no tools are installed on PATH, use available default desktop worker
-            installed_workers = self.worker_registry.list_workers()
-
-        # Cycle worker candidate based on retry_count for automatic reassignment
-        worker_idx = task.retry_count % len(installed_workers)
-        worker = installed_workers[worker_idx]
+        worker = self._select_worker(task)
         task.assigned_worker_id = worker.worker_id
 
         elapsed = time.time() - queue_start_time if queue_start_time > 0 else 0.0
@@ -160,7 +207,12 @@ class ParallelTaskQueue:
             "prompt": task.prompt,
             "workspace_dir": str(workspace_dir),
         }
-        res = worker.execute(task_payload)
+        old_state = getattr(worker, "state", WorkerState.IDLE)
+        worker.state = WorkerState.BUSY
+        try:
+            res = worker.execute(task_payload)
+        finally:
+            worker.state = old_state
         task.output_result = res
 
         if not res.success:

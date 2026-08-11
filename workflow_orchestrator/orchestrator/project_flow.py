@@ -145,7 +145,8 @@ class ProjectFlowEngine:
             from workflow_orchestrator.orchestrator.orchestrator import Orchestrator
 
             worker_registry = Orchestrator.get_instance().worker_registry
-            task_queue = ParallelTaskQueue(worker_registry=worker_registry)
+            task_scale = build_result.get("project_scale", "standard")
+            task_queue = ParallelTaskQueue(worker_registry=worker_registry, project_scale=task_scale)
 
             # Queue DAG Nodes with skill requirements
             t1 = task_queue.add_task(

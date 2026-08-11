@@ -44,6 +44,9 @@ class AutonomousLoopResult:
     summary_log: List[str] = field(default_factory=list)
 
 
+from workflow_orchestrator.builder.data_models import ProjectScale
+
+
 class AutonomousProjectLoop:
     """Self-governing CEO Orchestration Loop coordinating local desktop workers to completion."""
 
@@ -52,10 +55,12 @@ class AutonomousProjectLoop:
         worker_registry: Optional[DesktopWorkerRegistry] = None,
         project_root: Optional[Path] = None,
         max_loop_iterations: int = 5,
+        project_scale: ProjectScale | str = ProjectScale.STANDARD,
     ) -> None:
         self.worker_registry = worker_registry or DesktopWorkerRegistry()
         self.project_root = project_root or Path.cwd()
         self.max_loop_iterations = max_loop_iterations
+        self.project_scale = project_scale
 
         self.planner = GoalPlanner()
         self.context_mgr = PerWorkerContextManager(project_root=self.project_root)
@@ -74,7 +79,11 @@ class AutonomousProjectLoop:
         summary_log.append(f"Generated Plan with {len(plan.milestones)} milestone(s) and {len(plan.tasks)} initial task(s).")
 
         # 2. Build Task Queue
-        queue = ParallelTaskQueue(worker_registry=self.worker_registry, workspace_observer=self.observer)
+        queue = ParallelTaskQueue(
+            worker_registry=self.worker_registry,
+            workspace_observer=self.observer,
+            project_scale=self.project_scale,
+        )
         for t_id, task_spec in plan.tasks.items():
             queue.add_task(
                 task_id=task_spec.task_id,
