@@ -69,25 +69,33 @@ class DesktopBrowserTransport:
 
                 # Find input textarea / contenteditable div
                 input_selector = (
-                    "rich-textarea p, textarea, div[contenteditable='true'], "
-                    "div[role='textbox'], p.placeholder, #prompt-textarea"
+                    "rich-textarea p, .ql-editor[contenteditable='true'], "
+                    "div[contenteditable='true'], textarea, #prompt-textarea, "
+                    "div[role='textbox']"
                 )
-                page.wait_for_selector(input_selector, timeout=10000)
+                page.wait_for_selector(input_selector, timeout=20000)
                 input_elem = page.locator(input_selector).first
                 input_elem.click()
-                input_elem.fill(prompt)
+                try:
+                    input_elem.fill(prompt)
+                except Exception:
+                    page.keyboard.type(prompt)
 
-                # Press Enter or click send button
-                send_button_selector = "button[aria-label*='Send'], button[aria-label*='Submit'], button.send-button"
+                time.sleep(0.5)
+                page.keyboard.press("Enter")
+
+                # Also try clicking send button if present
+                send_button_selector = "button[aria-label*='Send'], button[aria-label*='Submit'], button.send-button, button.send-button-container"
                 if page.locator(send_button_selector).count() > 0:
-                    page.locator(send_button_selector).first.click()
-                else:
-                    page.keyboard.press("Enter")
+                    try:
+                        page.locator(send_button_selector).first.click()
+                    except Exception:
+                        pass
 
                 # Wait for response text element to populate & stabilize
                 response_selector = (
-                    "message-content, .model-response-text, div.markdown, "
-                    "div[data-message-author-role='assistant'], .prose"
+                    "model-response, message-content, .model-response-text, div.markdown, "
+                    "div[data-message-author-role='assistant'], .prose, .response-container-content"
                 )
                 page.wait_for_selector(response_selector, timeout=int(timeout_seconds * 1000))
                 time.sleep(2.0)  # Allow response completion
