@@ -150,6 +150,7 @@ class ParallelTaskQueue:
             if self.project_scale == ProjectScale.MINIMAL and self.pinned_worker_id:
                 pinned = self.worker_registry.get_worker(self.pinned_worker_id)
                 if pinned and pinned.discover():
+                    pinned.state = WorkerState.BUSY
                     return pinned
 
             # Capability-based worker selection & real discovery filtering
@@ -161,16 +162,18 @@ class ParallelTaskQueue:
 
             if not installed_workers:
                 self.worker_registry.discover_and_start_all()
-                installed_workers = self.worker_registry.list_workers()
+                installed_workers = [w for w in self.worker_registry.list_workers() if w.discover()]
 
             if not installed_workers:
-                fallback_worker = DesktopWorker(worker_id="default_desktop_worker", name="Default Desktop Worker")
-                self.worker_registry.register_worker(fallback_worker)
-                installed_workers = [fallback_worker]
+                raise RuntimeError(
+                    f"No installed or discoverable desktop worker available for task '{task.task_id}' "
+                    f"(required skill: '{task.required_skill}')."
+                )
 
             if self.project_scale == ProjectScale.MINIMAL:
                 selected = installed_workers[0]
                 self.pinned_worker_id = selected.worker_id
+                selected.state = WorkerState.BUSY
                 return selected
 
             # STANDARD / LARGE scale: spread across IDLE matching workers
@@ -179,6 +182,7 @@ class ParallelTaskQueue:
 
             selected = candidates[self._worker_assignment_index % len(candidates)]
             self._worker_assignment_index += 1
+            selected.state = WorkerState.BUSY
             return selected
 
     def _dispatch_and_verify_task(
@@ -188,10 +192,13 @@ class ParallelTaskQueue:
         queue_start_time: float = 0.0,
     ) -> None:
         """Dispatch task to best available worker, verify output, and handle retries on failure."""
-        task.state = TaskProgressState.RUNNING
+        with self._lock:
+            task.state = TaskProgressState.RUNNING
 
         worker = self._select_worker(task)
-        task.assigned_worker_id = worker.worker_id
+
+        with self._lock:
+            task.assigned_worker_id = worker.worker_id
 
         elapsed = time.time() - queue_start_time if queue_start_time > 0 else 0.0
         msg_start = (
@@ -207,13 +214,20 @@ class ParallelTaskQueue:
             "prompt": task.prompt,
             "workspace_dir": str(workspace_dir),
         }
-        old_state = getattr(worker, "state", WorkerState.IDLE)
-        worker.state = WorkerState.BUSY
         try:
             res = worker.execute(task_payload)
         finally:
-            worker.state = old_state
-        task.output_result = res
+            with self._lock:
+                worker.state = WorkerState.IDLE
+
+        with self._lock:
+            task.output_result = res
+            self.execution_log.append({
+                "task_id": task.task_id,
+                "worker_id": worker.worker_id,
+                "success": res.success,
+                "timestamp": time.time(),
+            })
 
         if not res.success:
             msg_fail = f"[Task Queue] Task '{task.task_id}' execution failed: {res.error_message}"
@@ -223,11 +237,13 @@ class ParallelTaskQueue:
             return
 
         # 3. Verification Phase (State: Verifying)
-        task.state = TaskProgressState.VERIFYING
+        with self._lock:
+            task.state = TaskProgressState.VERIFYING
         snapshot = self.observer.capture_snapshot()
 
         if snapshot.test_passed:
-            task.state = TaskProgressState.COMPLETED
+            with self._lock:
+                task.state = TaskProgressState.COMPLETED
             msg_ok = f"[Task Queue] Task '{task.task_id}' successfully completed and verified."
             logger.info(msg_ok)
             print(f"  {msg_ok}")
