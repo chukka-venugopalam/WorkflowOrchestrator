@@ -181,15 +181,11 @@ class ParallelTaskQueue:
             installed_workers = [w for w in eligible_workers if w.discover()]
 
             if not installed_workers:
-                installed_workers = [w for w in self.worker_registry.list_workers() if w.discover()]
-
-            if not installed_workers:
-                self.worker_registry.discover_and_start_all()
-                installed_workers = [w for w in self.worker_registry.list_workers() if w.discover()]
+                installed_workers = [w for w in self.worker_registry.list_workers(active_only=True) if w.discover()]
 
             if not installed_workers:
                 raise RuntimeError(
-                    f"No installed or discoverable desktop worker available for task '{task.task_id}' "
+                    f"No installed or discoverable active desktop worker available for task '{task.task_id}' "
                     f"(required skill: '{task.required_skill}')."
                 )
 
@@ -245,11 +241,7 @@ class ParallelTaskQueue:
             "prompt": task.prompt,
             "workspace_dir": str(workspace_dir),
         }
-        try:
-            res = worker.execute(task_payload)
-        finally:
-            with self._lock:
-                worker.state = WorkerState.IDLE
+        res = worker.execute(task_payload)
 
         with self._lock:
             task.output_result = res

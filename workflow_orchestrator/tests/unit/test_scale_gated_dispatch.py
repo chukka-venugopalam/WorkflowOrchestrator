@@ -21,7 +21,7 @@ class MockGeneralWorker(DesktopWorker):
     def discover(self) -> bool:
         return True
 
-    def execute(self, task_payload: Dict[str, Any]) -> DesktopWorkerTaskResult:
+    def _execute_desktop_task(self, task_payload: Dict[str, Any]) -> DesktopWorkerTaskResult:
         return DesktopWorkerTaskResult(
             success=True,
             output_text="Mock task output",
@@ -96,3 +96,38 @@ def test_standard_scale_spreads_tasks_across_multiple_workers():
     assigned_workers = [t1.assigned_worker_id, t2.assigned_worker_id, t3.assigned_worker_id, t4.assigned_worker_id]
     distinct_workers = set(assigned_workers)
     assert len(distinct_workers) > 1, f"Expected tasks to be spread across multiple workers, got: {assigned_workers}"
+
+
+class FailingWorker(DesktopWorker):
+    """Worker whose _execute_desktop_task raises an exception."""
+
+    def __init__(self, worker_id: str, name: str) -> None:
+        super().__init__(worker_id=worker_id, name=name, skills=["failing_skill"])
+        self.state = WorkerState.IDLE
+
+    def discover(self) -> bool:
+        return True
+
+    def _execute_desktop_task(self, task_payload: Dict[str, Any]) -> DesktopWorkerTaskResult:
+        raise RuntimeError("Worker process crashed unexpectedly")
+
+
+def test_failing_worker_retains_failed_state():
+    """Verify that a worker whose task fails transitions to WorkerState.FAILED and remains FAILED."""
+    registry = DesktopWorkerRegistry()
+    worker = FailingWorker("failing_worker_1", "Failing Worker")
+    registry.register_worker(worker)
+
+    queue = ParallelTaskQueue(
+        worker_registry=registry,
+        workspace_observer=MockObserver(),
+        project_scale=ProjectScale.STANDARD,
+    )
+
+    t1 = queue.add_task("task_fail", "Failing Task", "failing_skill", "Do fail")
+    t1.max_retries = 1
+    queue.execute_queue(workspace_dir=Path.cwd())
+
+    # Confirm worker state remains WorkerState.FAILED and is NOT reset to IDLE
+    assert worker.state == WorkerState.FAILED, f"Expected worker state FAILED, got {worker.state}"
+
