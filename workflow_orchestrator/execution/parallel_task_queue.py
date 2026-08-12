@@ -101,21 +101,36 @@ class ParallelTaskQueue:
             elapsed = time.time() - start_time
             if elapsed > max_total_seconds:
                 logger.warning(f"Pipeline timeout of {max_total_seconds}s exceeded after {elapsed:.1f}s. Halting queue execution.")
-                for t_id, t in self.tasks.items():
-                    if t.state in (TaskProgressState.QUEUED, TaskProgressState.RUNNING):
-                        t.state = TaskProgressState.FAILED
-                        t.error_log = f"Pipeline timeout of {max_total_seconds}s exceeded"
+                with self._lock:
+                    for t_id, t in self.tasks.items():
+                        if t.state in (TaskProgressState.QUEUED, TaskProgressState.RUNNING):
+                            t.state = TaskProgressState.FAILED
+                            t.error_log = f"Pipeline timeout of {max_total_seconds}s exceeded"
                 break
 
-            ready_tasks = [
-                t for t in self.tasks.values()
-                if t.state == TaskProgressState.QUEUED and self._dependencies_completed(t)
-            ]
+            with self._lock:
+                ready_tasks = [
+                    t for t in self.tasks.values()
+                    if t.state == TaskProgressState.QUEUED and self._dependencies_completed(t)
+                ]
+                running_tasks = [
+                    t for t in self.tasks.values()
+                    if t.state in (TaskProgressState.RUNNING, TaskProgressState.VERIFYING)
+                ]
+                uncompleted = [t for t in self.tasks.values() if t.state != TaskProgressState.COMPLETED and t.state != TaskProgressState.FAILED]
+
+            if not uncompleted:
+                break
+
+            if not ready_tasks and not running_tasks:
+                logger.warning("No ready or running tasks in queue; halting queue execution.")
+                break
 
             if not ready_tasks:
-                break
+                time.sleep(0.05)
+                continue
 
-            # STANDARD / LARGE scale: dispatch independent ready tasks concurrently
+            dispatched_any = False
             if self.project_scale != ProjectScale.MINIMAL and len(ready_tasks) > 1:
                 with ThreadPoolExecutor(max_workers=min(4, len(ready_tasks))) as executor:
                     futures = [
@@ -123,15 +138,21 @@ class ParallelTaskQueue:
                         for task in ready_tasks
                     ]
                     for f in futures:
-                        f.result()
+                        if f.result():
+                            dispatched_any = True
             else:
                 for task in ready_tasks:
                     if (time.time() - start_time) > max_total_seconds:
                         logger.warning(f"Pipeline timeout of {max_total_seconds}s exceeded. Halting task dispatch.")
-                        task.state = TaskProgressState.FAILED
-                        task.error_log = f"Pipeline timeout of {max_total_seconds}s exceeded"
+                        with self._lock:
+                            task.state = TaskProgressState.FAILED
+                            task.error_log = f"Pipeline timeout of {max_total_seconds}s exceeded"
                         break
-                    self._dispatch_and_verify_task(task, workspace_path, start_time)
+                    if self._dispatch_and_verify_task(task, workspace_path, start_time):
+                        dispatched_any = True
+
+            if not dispatched_any:
+                time.sleep(0.05)
 
         return {t_id: t.state for t_id, t in self.tasks.items()}
 
@@ -143,15 +164,17 @@ class ParallelTaskQueue:
                 return False
         return True
 
-    def _select_worker(self, task: OrchestrationTaskNode) -> DesktopWorker:
+    def _select_worker(self, task: OrchestrationTaskNode) -> Optional[DesktopWorker]:
         """Select worker based on scale-gated execution strategy."""
         with self._lock:
             # MINIMAL scale: lock to first pinned worker if valid and available
             if self.project_scale == ProjectScale.MINIMAL and self.pinned_worker_id:
                 pinned = self.worker_registry.get_worker(self.pinned_worker_id)
-                if pinned and pinned.discover():
+                if pinned and pinned.discover() and getattr(pinned, "state", WorkerState.IDLE) == WorkerState.IDLE:
                     pinned.state = WorkerState.BUSY
                     return pinned
+                elif pinned and getattr(pinned, "state", WorkerState.IDLE) == WorkerState.BUSY:
+                    return None
 
             # Capability-based worker selection & real discovery filtering
             eligible_workers = self.worker_registry.find_workers_by_skill(task.required_skill, active_only=True)
@@ -170,17 +193,19 @@ class ParallelTaskQueue:
                     f"(required skill: '{task.required_skill}')."
                 )
 
+            # Strict IDLE-only matching: never double-book a worker that is already BUSY
+            idle_workers = [w for w in installed_workers if getattr(w, "state", WorkerState.IDLE) == WorkerState.IDLE]
+            if not idle_workers:
+                return None
+
             if self.project_scale == ProjectScale.MINIMAL:
-                selected = installed_workers[0]
+                selected = idle_workers[0]
                 self.pinned_worker_id = selected.worker_id
                 selected.state = WorkerState.BUSY
                 return selected
 
             # STANDARD / LARGE scale: spread across IDLE matching workers
-            idle_workers = [w for w in installed_workers if getattr(w, "state", WorkerState.IDLE) == WorkerState.IDLE]
-            candidates = idle_workers if idle_workers else installed_workers
-
-            selected = candidates[self._worker_assignment_index % len(candidates)]
+            selected = idle_workers[self._worker_assignment_index % len(idle_workers)]
             self._worker_assignment_index += 1
             selected.state = WorkerState.BUSY
             return selected
@@ -190,12 +215,18 @@ class ParallelTaskQueue:
         task: OrchestrationTaskNode,
         workspace_dir: Path,
         queue_start_time: float = 0.0,
-    ) -> None:
+    ) -> bool:
         """Dispatch task to best available worker, verify output, and handle retries on failure."""
         with self._lock:
+            if task.state != TaskProgressState.QUEUED:
+                return False
             task.state = TaskProgressState.RUNNING
 
         worker = self._select_worker(task)
+        if worker is None:
+            with self._lock:
+                task.state = TaskProgressState.QUEUED
+            return False
 
         with self._lock:
             task.assigned_worker_id = worker.worker_id
@@ -206,7 +237,7 @@ class ParallelTaskQueue:
             f"on worker '{worker.name}' (Elapsed: {elapsed:.1f}s)"
         )
         logger.info(msg_start)
-        print(f"  {msg_start}")
+        print(f"  {msg_start}", flush=True)
 
         # 2. Worker Execution
         task_payload = {
@@ -232,9 +263,9 @@ class ParallelTaskQueue:
         if not res.success:
             msg_fail = f"[Task Queue] Task '{task.task_id}' execution failed: {res.error_message}"
             logger.warning(msg_fail)
-            print(f"  {msg_fail}")
+            print(f"  {msg_fail}", flush=True)
             self._handle_task_retry(task, f"Worker execution error: {res.error_message}", workspace_dir)
-            return
+            return True
 
         # 3. Verification Phase (State: Verifying)
         with self._lock:
@@ -246,12 +277,13 @@ class ParallelTaskQueue:
                 task.state = TaskProgressState.COMPLETED
             msg_ok = f"[Task Queue] Task '{task.task_id}' successfully completed and verified."
             logger.info(msg_ok)
-            print(f"  {msg_ok}")
+            print(f"  {msg_ok}", flush=True)
         else:
             msg_ver_fail = f"[Task Queue] Task '{task.task_id}' verification failed."
             logger.warning(msg_ver_fail)
-            print(f"  {msg_ver_fail}")
+            print(f"  {msg_ver_fail}", flush=True)
             self._handle_task_retry(task, f"Verification failed: {snapshot.last_test_output[:100]}", workspace_dir)
+        return True
 
     def _handle_task_retry(self, task: OrchestrationTaskNode, error_msg: str, workspace_dir: Path) -> None:
         """Auto-retry task with prompt re-formulation or re-assignment."""

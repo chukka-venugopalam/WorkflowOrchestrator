@@ -7,6 +7,7 @@ discover, start, execute, heartbeat, pause, resume, recover, stop.
 from __future__ import annotations
 
 import logging
+import threading
 import time
 from dataclasses import dataclass, field
 from enum import Enum
@@ -68,6 +69,7 @@ class DesktopWorker:
         ]
         self.last_heartbeat_time: float = time.time()
         self.process_handle: Any = None
+        self._execution_lock = threading.Lock()
 
     def discover(self) -> bool:
         """Discover binary executable, local service, or window handle on desktop."""
@@ -83,20 +85,21 @@ class DesktopWorker:
     def execute(self, task_payload: Dict[str, Any]) -> DesktopWorkerTaskResult:
         """Execute assigned task payload via desktop transport."""
         t0 = time.time()
-        self.state = WorkerState.BUSY
-        try:
-            result = self._execute_desktop_task(task_payload)
-            self.state = WorkerState.IDLE
-            result.duration_seconds = time.time() - t0
-            return result
-        except Exception as e:
-            self.state = WorkerState.FAILED
-            logger.error(f"DesktopWorker '{self.worker_id}' execution error: {e}")
-            return DesktopWorkerTaskResult(
-                success=False,
-                error_message=str(e),
-                duration_seconds=time.time() - t0,
-            )
+        with self._execution_lock:
+            self.state = WorkerState.BUSY
+            try:
+                result = self._execute_desktop_task(task_payload)
+                self.state = WorkerState.IDLE
+                result.duration_seconds = time.time() - t0
+                return result
+            except Exception as e:
+                self.state = WorkerState.FAILED
+                logger.error(f"DesktopWorker '{self.worker_id}' execution error: {e}")
+                return DesktopWorkerTaskResult(
+                    success=False,
+                    error_message=str(e),
+                    duration_seconds=time.time() - t0,
+                )
 
     def _execute_desktop_task(self, task_payload: Dict[str, Any]) -> DesktopWorkerTaskResult:
         """Subclass override for desktop transport dispatch."""

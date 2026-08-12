@@ -56,6 +56,7 @@ class AutonomousProjectLoop:
         project_root: Optional[Path] = None,
         max_loop_iterations: int = 5,
         project_scale: ProjectScale | str = ProjectScale.STANDARD,
+        workspace_observer: Optional[WorkspaceObserver] = None,
     ) -> None:
         self.worker_registry = worker_registry or DesktopWorkerRegistry()
         self.project_root = project_root or Path.cwd()
@@ -66,7 +67,7 @@ class AutonomousProjectLoop:
         self.context_mgr = PerWorkerContextManager(project_root=self.project_root)
         self.merger = ResultMerger(project_root=self.project_root)
         self.decision_engine = ExecutiveDecisionEngine(planner=self.planner)
-        self.observer = WorkspaceObserver(project_root=self.project_root)
+        self.observer = workspace_observer or WorkspaceObserver(project_root=self.project_root)
 
     def run_autonomous_loop(self, goal: str) -> AutonomousLoopResult:
         """Run the full Autonomous Project Loop to completion."""
