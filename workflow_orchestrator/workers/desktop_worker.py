@@ -69,6 +69,7 @@ class DesktopWorker:
         ]
         self.last_heartbeat_time: float = time.time()
         self.process_handle: Any = None
+        self.failed_at: Optional[float] = None
         self._execution_lock = threading.Lock()
 
     def discover(self) -> bool:
@@ -78,6 +79,7 @@ class DesktopWorker:
     def start(self) -> bool:
         """Launch desktop worker process or automation driver."""
         self.state = WorkerState.IDLE
+        self.failed_at = None
         self.last_heartbeat_time = time.time()
         logger.info(f"DesktopWorker '{self.worker_id}' started successfully.")
         return True
@@ -90,10 +92,12 @@ class DesktopWorker:
             try:
                 result = self._execute_desktop_task(task_payload)
                 self.state = WorkerState.IDLE
+                self.failed_at = None
                 result.duration_seconds = time.time() - t0
                 return result
             except Exception as e:
                 self.state = WorkerState.FAILED
+                self.failed_at = time.time()
                 logger.error(f"DesktopWorker '{self.worker_id}' execution error: {e}")
                 return DesktopWorkerTaskResult(
                     success=False,

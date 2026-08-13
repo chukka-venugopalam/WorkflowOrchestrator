@@ -130,4 +130,70 @@ def test_failing_worker_retains_failed_state():
 
     # Confirm worker state remains WorkerState.FAILED and is NOT reset to IDLE
     assert worker.state == WorkerState.FAILED, f"Expected worker state FAILED, got {worker.state}"
+    assert worker.failed_at is not None, "Expected failed_at timestamp to be set"
+
+
+class RecoverableWorker(DesktopWorker):
+    """Worker that fails initially, then passes discovery and succeeds after cooldown."""
+
+    def __init__(self, worker_id: str, name: str) -> None:
+        super().__init__(worker_id=worker_id, name=name, skills=["recovery_skill"])
+        self.state = WorkerState.IDLE
+        self.should_fail = True
+        self.discovery_healthy = True
+
+    def discover(self) -> bool:
+        return self.discovery_healthy
+
+    def _execute_desktop_task(self, task_payload: Dict[str, Any]) -> DesktopWorkerTaskResult:
+        if self.should_fail:
+            raise RuntimeError("Transient network blip")
+        return DesktopWorkerTaskResult(success=True, output_text="Recovered execution")
+
+
+def test_failed_worker_recovers_after_cooldown_and_discovery_check():
+    """Verify FAILED worker is excluded initially, then re-selected after cooldown + discover() health check."""
+    import time
+    registry = DesktopWorkerRegistry()
+    worker = RecoverableWorker("rec_worker_1", "Recoverable Worker")
+    registry.register_worker(worker)
+
+    queue = ParallelTaskQueue(
+        worker_registry=registry,
+        workspace_observer=MockObserver(),
+        project_scale=ProjectScale.STANDARD,
+        cooldown_seconds=30.0,
+    )
+
+    # 1. Fail worker
+    t_fail = queue.add_task("task_1", "Task 1", "recovery_skill", "Prompt 1")
+    t_fail.max_retries = 1
+    queue.execute_queue(workspace_dir=Path.cwd())
+    assert worker.state == WorkerState.FAILED
+    assert worker.failed_at is not None
+
+    t_next = queue.add_task("task_2", "Task 2", "recovery_skill", "Prompt 2")
+
+    # 2. Immediately after fail: _select_worker returns None (cooldown active)
+    selected_immediate = queue._select_worker(t_next)
+    assert selected_immediate is None
+    assert worker.state == WorkerState.FAILED
+
+    # 3. Simulate cooldown expired, but discover() returns False -> no discoverable worker, raises RuntimeError, failed_at stays unchanged
+    worker.failed_at = time.time() - 35.0
+    worker.discovery_healthy = False
+    old_failed_at = worker.failed_at
+    with pytest.raises(RuntimeError):
+        queue._select_worker(t_next)
+    assert worker.state == WorkerState.FAILED
+    assert worker.failed_at == old_failed_at
+
+    # 4. Cooldown expired AND discover() returns True -> re-selected by selection logic
+    worker.discovery_healthy = True
+    worker.should_fail = False
+    selected_recovered = queue._select_worker(t_next)
+    assert selected_recovered == worker
+    assert worker.state == WorkerState.BUSY
+    assert worker.failed_at is None
+
 

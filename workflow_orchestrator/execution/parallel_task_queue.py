@@ -53,6 +53,7 @@ class ParallelTaskQueue:
         worker_registry: Optional[DesktopWorkerRegistry] = None,
         workspace_observer: Optional[WorkspaceObserver] = None,
         project_scale: ProjectScale | str = ProjectScale.STANDARD,
+        cooldown_seconds: float = 30.0,
     ) -> None:
         self.worker_registry = worker_registry or DesktopWorkerRegistry()
         self.observer = workspace_observer or WorkspaceObserver()
@@ -62,6 +63,7 @@ class ParallelTaskQueue:
             except ValueError:
                 project_scale = ProjectScale.STANDARD
         self.project_scale: ProjectScale = project_scale
+        self.cooldown_seconds: float = cooldown_seconds
         self.pinned_worker_id: Optional[str] = None
         self.tasks: Dict[str, OrchestrationTaskNode] = {}
         self.execution_log: List[Dict[str, Any]] = []
@@ -176,18 +178,37 @@ class ParallelTaskQueue:
                 elif pinned and getattr(pinned, "state", WorkerState.IDLE) == WorkerState.BUSY:
                     return None
 
+            # FAILED worker cooldown recovery check
+            now = time.time()
+            all_known = self.worker_registry.list_workers(active_only=False)
+            for w in all_known:
+                if getattr(w, "state", WorkerState.IDLE) == WorkerState.FAILED:
+                    failed_at = getattr(w, "failed_at", None) or 0.0
+                    if (now - failed_at) > self.cooldown_seconds:
+                        if w.discover():
+                            w.state = WorkerState.IDLE
+                            w.failed_at = None
+                            logger.info(
+                                f"DesktopWorker '{w.worker_id}' recovered after {self.cooldown_seconds}s cooldown "
+                                f"and passed discovery health check; state reset to IDLE."
+                            )
+
             # Capability-based worker selection & real discovery filtering
-            eligible_workers = self.worker_registry.find_workers_by_skill(task.required_skill, active_only=True)
-            installed_workers = [w for w in eligible_workers if w.discover()]
+            registered_skill_workers = self.worker_registry.find_workers_by_skill(task.required_skill, active_only=False)
+            installed_registered = [w for w in registered_skill_workers if w.discover()]
+            if not installed_registered:
+                installed_registered = [w for w in self.worker_registry.list_workers(active_only=False) if w.discover()]
 
-            if not installed_workers:
-                installed_workers = [w for w in self.worker_registry.list_workers(active_only=True) if w.discover()]
-
-            if not installed_workers:
+            if not installed_registered:
                 raise RuntimeError(
-                    f"No installed or discoverable active desktop worker available for task '{task.task_id}' "
+                    f"No installed or discoverable desktop worker available for task '{task.task_id}' "
                     f"(required skill: '{task.required_skill}')."
                 )
+
+            eligible_workers = self.worker_registry.find_workers_by_skill(task.required_skill, active_only=True)
+            installed_workers = [w for w in eligible_workers if w.discover()]
+            if not installed_workers:
+                installed_workers = [w for w in self.worker_registry.list_workers(active_only=True) if w.discover()]
 
             # Strict IDLE-only matching: never double-book a worker that is already BUSY
             idle_workers = [w for w in installed_workers if getattr(w, "state", WorkerState.IDLE) == WorkerState.IDLE]
