@@ -1,6 +1,6 @@
 {
-  "contract_id": "4277a973334a",
-  "project_id": "bbd184517474",
+  "contract_id": "28d6ee117bcd",
+  "project_id": "cb760ed7038f",
   "project_name": "Simple Web App",
   "version": "1.0.0",
   "status": "draft",
@@ -23,6 +23,6 @@
   "milestones": [],
   "acceptance_criteria": [],
   "human_decisions": [],
-  "created_at": "2026-07-25T08:24:31.088657+00:00",
-  "updated_at": "2026-07-25T08:24:31.088687+00:00"
+  "created_at": "2026-08-15T16:27:20.271417+00:00",
+  "updated_at": "2026-08-15T16:27:20.271426+00:00"
 }

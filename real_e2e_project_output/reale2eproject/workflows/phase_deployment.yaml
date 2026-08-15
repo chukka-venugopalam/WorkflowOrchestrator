@@ -1,0 +1,73 @@
+name: Deployment - Phase
+description: 'Implementation phase: Deployment'
+tags:
+- deployment
+- builder
+steps:
+- name: Deployment Setup
+  plugin: agent
+  config:
+    task_id: task_deployment_setup
+    goal: Set up and prepare for Deployment
+    capabilities:
+    - reasoning.planning
+    - tool.filesystem
+    expected_outputs:
+    - deployment_setup_complete
+  on_failure: retry
+  retry:
+    max_retries: 1
+    delay: 1.0
+- name: Deployment Setup
+  plugin: agent
+  config:
+    task_id: task_deployment_deployment_setup
+    goal: 'Deliver: Deployment scripts, Environment config, Monitoring setup'
+    capabilities:
+    - codegen.implementation
+    - reasoning.problem-solving
+    expected_outputs:
+    - Deployment scripts
+    - Environment config
+    - Monitoring setup
+    depends_on:
+    - task_deployment_setup
+  on_failure: retry
+  retry:
+    max_retries: 2
+    delay: 2.0
+- name: Release
+  plugin: agent
+  config:
+    task_id: task_deployment_release
+    goal: 'Deliver: Production deployment, Release notes'
+    capabilities:
+    - codegen.implementation
+    - reasoning.problem-solving
+    expected_outputs:
+    - Production deployment
+    - Release notes
+    depends_on:
+    - task_deployment_setup
+    - task_deployment_deployment_setup
+  on_failure: retry
+  retry:
+    max_retries: 2
+    delay: 2.0
+- name: Verify Deployment
+  plugin: agent
+  config:
+    task_id: task_deployment_verify
+    goal: Verify all deliverables for Deployment
+    capabilities:
+    - verify.testing
+    - verify.lint
+    - verify.typecheck
+    expected_outputs:
+    - deployment_verification_report
+    depends_on:
+    - task_deployment_release
+  on_failure: retry
+  retry:
+    max_retries: 2
+    delay: 3.0

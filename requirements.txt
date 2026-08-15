@@ -6,5 +6,7 @@ PyYAML>=6.0
 rich>=13.0
 typer>=0.9.0
 apscheduler>=3.10.0
+fastapi>=0.110.0
 httpx>=0.25.0
 pydantic>=2.0.0
+uvicorn>=0.29.0

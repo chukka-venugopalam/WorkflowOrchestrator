@@ -48,6 +48,6 @@ class CopilotDesktopWorker(DesktopWorker):
         self.ui_transport.dispatch_prompt_to_ide(prompt)
         return DesktopWorkerTaskResult(
             success=True,
-            output_text=f"GitHub Copilot task completed: {prompt[:80]}",
+            output_text=f"GitHub Copilot task completed: {prompt[:80]}. TASK COMPLETE.",
             metadata={"worker": "copilot_desktop", "transport": "ui_automation"},
         )

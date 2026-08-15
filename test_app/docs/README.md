@@ -9,12 +9,11 @@ Create a build a test app that delivers an exceptional user experience through m
 - **Language:** TypeScript
 - **Framework:** Next.js 14+
 - **Styling:** Tailwind CSS
-- **State_Management:** Zustand / React Query
-- **Database:** PostgreSQL + Prisma ORM
-- **Api:** Next.js API Routes / tRPC
-- **Testing:** Vitest + Playwright
-- **Deployment:** Vercel / Docker
-- **Ci_Cd:** GitHub Actions
+- **State_Management:** Zustand
+- **Database:** SQLite
+- **Api:** REST API
+- **Testing:** Vitest
+- **Deployment:** Vercel / Local
 
 ## Getting Started
 
@@ -44,13 +43,9 @@ cp .env.example .env
 
 ```
 README.md
-CHANGELOG.md
 ARCHITECTURE.md
-CONTRIBUTING.md
-LICENSE
 .gitignore
-.env.example
-Cargo.toml
+package.json
 src/
     components/
     pages/
@@ -60,16 +55,13 @@ src/
     styles/
     hooks/
     types/
-    middleware/
 public/
 tests/
     unit/
     integration/
-    e2e/
 scripts/
 config/
 docs/
-docker/
 ```
 
 ## Development

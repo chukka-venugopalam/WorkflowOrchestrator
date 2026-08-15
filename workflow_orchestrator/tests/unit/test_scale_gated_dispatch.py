@@ -22,9 +22,12 @@ class MockGeneralWorker(DesktopWorker):
         return True
 
     def _execute_desktop_task(self, task_payload: Dict[str, Any]) -> DesktopWorkerTaskResult:
+        workspace_dir = Path(task_payload.get("workspace_dir", Path.cwd()))
+        if workspace_dir.exists():
+            (workspace_dir / "mock_output.txt").write_text("Mock task output")
         return DesktopWorkerTaskResult(
             success=True,
-            output_text="Mock task output",
+            output_text="Mock task output TASK COMPLETE",
         )
 
 

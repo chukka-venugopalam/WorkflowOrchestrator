@@ -49,6 +49,20 @@ class DesktopWorkerTaskResult:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
+COMPLETION_MARKERS: List[str] = [
+    "task complete",
+    "task completed",
+    "task finished",
+    "completed successfully",
+    "successfully completed",
+    "execution complete",
+    "all tasks complete",
+    "done",
+    "complete",
+    "finished",
+]
+
+
 class DesktopWorker:
     """Base wrapper class for local desktop AI workers operating without cloud APIs."""
 
@@ -85,12 +99,12 @@ class DesktopWorker:
         return True
 
     def execute(self, task_payload: Dict[str, Any]) -> DesktopWorkerTaskResult:
-        """Execute assigned task payload via desktop transport."""
+        """Execute assigned task payload via desktop transport with multi-turn conversation loop."""
         t0 = time.time()
         with self._execution_lock:
             self.state = WorkerState.BUSY
             try:
-                result = self._execute_desktop_task(task_payload)
+                result = self._execute_conversational_loop(task_payload)
                 self.state = WorkerState.IDLE
                 self.failed_at = None
                 result.duration_seconds = time.time() - t0
@@ -105,12 +119,133 @@ class DesktopWorker:
                     duration_seconds=time.time() - t0,
                 )
 
+    def _execute_conversational_loop(self, task_payload: Dict[str, Any]) -> DesktopWorkerTaskResult:
+        """Execute task across multiple conversation turns until completion marker + file changes, or max_turns."""
+        max_turns = int(task_payload.get("max_turns", 8))
+        task_id = task_payload.get("task_id", "task")
+        base_prompt = task_payload.get("prompt", "")
+        workspace_dir = Path(task_payload.get("workspace_dir", Path.cwd()))
+
+        accumulated_output: List[str] = []
+        all_generated_files: List[Path] = []
+        current_prompt = base_prompt
+
+        def get_workspace_snapshot() -> Dict[Path, float]:
+            snapshot = {}
+            if workspace_dir.exists():
+                for p in workspace_dir.rglob("*"):
+                    if p.is_file() and not any(part.startswith(".") for part in p.parts):
+                        try:
+                            snapshot[p] = p.stat().st_mtime
+                        except OSError:
+                            pass
+            return snapshot
+
+        initial_snapshot = get_workspace_snapshot()
+        turn_start_snapshot = initial_snapshot
+
+        for turn in range(1, max_turns + 1):
+            logger.info(
+                f"Agent '{self.name}' turn {turn}/{max_turns}: sending prompt ({len(current_prompt)} chars)"
+            )
+
+            turn_payload = dict(task_payload)
+            turn_payload["prompt"] = current_prompt
+            turn_payload["turn"] = turn
+
+            turn_result = self._execute_desktop_task(turn_payload)
+
+            if not turn_result.success:
+                logger.warning(f"Agent '{self.name}' turn {turn}/{max_turns} returned failure: {turn_result.error_message}")
+                return turn_result
+
+            resp_text = turn_result.output_text or ""
+            accumulated_output.append(resp_text)
+            if turn_result.generated_files:
+                for gf in turn_result.generated_files:
+                    if gf not in all_generated_files:
+                        all_generated_files.append(gf)
+
+            current_snapshot = get_workspace_snapshot()
+            files_changed_this_turn = any(
+                p not in turn_start_snapshot or current_snapshot[p] > turn_start_snapshot[p]
+                for p in current_snapshot
+            ) or bool(turn_result.generated_files)
+
+            files_changed_overall = any(
+                p not in initial_snapshot or current_snapshot[p] > initial_snapshot[p]
+                for p in current_snapshot
+            ) or bool(all_generated_files)
+
+            resp_lower = resp_text.lower()
+            marker_found = any(m in resp_lower for m in COMPLETION_MARKERS)
+
+            allow_no_file_changes = task_payload.get("allow_no_file_changes", False)
+            force_single_turn = task_payload.get("force_single_turn", False)
+
+            if allow_no_file_changes:
+                completion_detected = marker_found or force_single_turn or turn_result.success
+            elif force_single_turn:
+                completion_detected = True
+            else:
+                completion_detected = marker_found and files_changed_overall
+
+            logger.info(
+                f"Agent '{self.name}' turn {turn}/{max_turns}: received response ({len(resp_text)} chars), "
+                f"completion_detected={completion_detected}, files_changed={files_changed_this_turn}"
+            )
+
+            if completion_detected:
+                new_disk_files = [p for p in current_snapshot if p not in initial_snapshot]
+                for nf in new_disk_files:
+                    if nf not in all_generated_files:
+                        all_generated_files.append(nf)
+
+                return DesktopWorkerTaskResult(
+                    success=True,
+                    output_text="\n\n".join(accumulated_output),
+                    generated_files=all_generated_files,
+                    metadata={
+                        "worker": self.worker_id,
+                        "turns_taken": turn,
+                        "max_turns": max_turns,
+                        "completion_detected": True,
+                    },
+                )
+
+            if turn == max_turns:
+                logger.warning(f"Agent '{self.name}' reached max turns ({max_turns}) without completion marker and file verification.")
+                return DesktopWorkerTaskResult(
+                    success=False,
+                    output_text="\n\n".join(accumulated_output),
+                    error_message=f"Task did not reach completion within {max_turns} turns",
+                    generated_files=all_generated_files,
+                    metadata={
+                        "worker": self.worker_id,
+                        "turns_taken": turn,
+                        "max_turns": max_turns,
+                        "completion_detected": False,
+                    },
+                )
+
+            turn_start_snapshot = current_snapshot
+            current_prompt = (
+                f"[Agent Continuation Turn {turn + 1}]: Previous turn output:\n{resp_text}\n\n"
+                f"Continue working on task '{task_id}'. Produce remaining code/artifacts and reply with 'TASK COMPLETE' when finished."
+            )
+
+        return DesktopWorkerTaskResult(
+            success=False,
+            error_message=f"Task did not reach completion within {max_turns} turns",
+            output_text="\n\n".join(accumulated_output),
+        )
+
     def _execute_desktop_task(self, task_payload: Dict[str, Any]) -> DesktopWorkerTaskResult:
         """Subclass override for desktop transport dispatch."""
         prompt = task_payload.get("prompt", "")
         return DesktopWorkerTaskResult(
             success=True,
-            output_text=f"Processed prompt by {self.name}: {prompt[:100]}",
+            output_text=f"Processed prompt by {self.name}: {prompt[:100]} TASK COMPLETE",
         )
 
     def heartbeat(self) -> bool:

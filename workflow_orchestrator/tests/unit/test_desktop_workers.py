@@ -36,7 +36,7 @@ class TestDesktopWorkerAbstraction:
 
         assert worker.heartbeat() is True
 
-        res = worker.execute({"prompt": "Hello World"})
+        res = worker.execute({"prompt": "Hello World", "allow_no_file_changes": True})
         assert res.success is True
         assert "Hello World" in res.output_text
 
@@ -95,11 +95,11 @@ class TestDesktopWorkerAbstraction:
             assert isinstance(is_installed, bool)
             if is_installed:
                 assert w.start() is True
-                res = w.execute({"prompt": "Test Prompt"})
+                res = w.execute({"prompt": "Test Prompt", "allow_no_file_changes": True})
                 assert isinstance(res, DesktopWorkerTaskResult)
                 assert w.stop() is True
             else:
-                res = w.execute({"prompt": "Test Prompt"})
+                res = w.execute({"prompt": "Test Prompt", "allow_no_file_changes": True})
                 assert isinstance(res, DesktopWorkerTaskResult)
 
     def test_codex_cli_worker_tool_not_found_returns_failure(self):

@@ -210,7 +210,11 @@ class TestSetupWizard:
 
 
 class TestProjectFlowEngine:
-    def test_execute_project_from_prompt(self, tmp_path: Path) -> None:
+    def test_execute_project_from_prompt(self, tmp_path: Path, monkeypatch) -> None:
+        monkeypatch.setattr(
+            "workflow_orchestrator.integrations.transports.desktop_terminal_transport.DesktopTerminalTransport.send_prompt",
+            lambda self, prompt, **kw: "Mocked unit test response TASK COMPLETE",
+        )
         pfe = ProjectFlowEngine()
         rec = pfe.execute_project_from_prompt(
             idea="I want to build an AI tourism platform.",

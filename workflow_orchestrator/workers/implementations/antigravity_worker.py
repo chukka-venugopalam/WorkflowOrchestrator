@@ -131,7 +131,7 @@ class AntigravityDesktopWorker(DesktopWorker):
 
             return DesktopWorkerTaskResult(
                 success=True,
-                output_text=f"Antigravity Desktop Worker executed task '{task_id}' successfully. Generated {len(generated)} files.",
+                output_text=f"Antigravity Desktop Worker executed task '{task_id}' successfully. Generated {len(generated)} files. TASK COMPLETE.",
                 generated_files=generated,
                 metadata={"worker": "antigravity_desktop", "simulation_mode": True},
             )

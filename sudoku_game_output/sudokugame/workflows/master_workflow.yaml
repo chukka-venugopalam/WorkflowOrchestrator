@@ -1,0 +1,75 @@
+name: Master Orchestrator
+description: Master workflow orchestrating all project phases
+tags:
+- master
+- builder
+- orchestrator
+steps:
+- name: 'Phase: Foundation'
+  plugin: workflow
+  config:
+    workflow_file: phase_foundation.yaml
+    phase: foundation
+  on_failure: stop
+  retry:
+    max_retries: 1
+- name: 'Phase: Data Layer'
+  plugin: workflow
+  config:
+    workflow_file: phase_data_layer.yaml
+    phase: data_layer
+    depends_on:
+    - step_1
+  on_failure: stop
+  retry:
+    max_retries: 1
+- name: 'Phase: Core Features'
+  plugin: workflow
+  config:
+    workflow_file: phase_core_features.yaml
+    phase: core_features
+    depends_on:
+    - step_2
+  on_failure: stop
+  retry:
+    max_retries: 1
+- name: 'Phase: Api & Integration'
+  plugin: workflow
+  config:
+    workflow_file: phase_api_&_integration.yaml
+    phase: api_&_integration
+    depends_on:
+    - step_3
+  on_failure: stop
+  retry:
+    max_retries: 1
+- name: 'Phase: Testing & Quality'
+  plugin: workflow
+  config:
+    workflow_file: phase_testing_&_quality.yaml
+    phase: testing_&_quality
+    depends_on:
+    - step_4
+  on_failure: stop
+  retry:
+    max_retries: 1
+- name: 'Phase: Documentation'
+  plugin: workflow
+  config:
+    workflow_file: phase_documentation.yaml
+    phase: documentation
+    depends_on:
+    - step_5
+  on_failure: stop
+  retry:
+    max_retries: 1
+- name: 'Phase: Deployment'
+  plugin: workflow
+  config:
+    workflow_file: phase_deployment.yaml
+    phase: deployment
+    depends_on:
+    - step_6
+  on_failure: stop
+  retry:
+    max_retries: 1

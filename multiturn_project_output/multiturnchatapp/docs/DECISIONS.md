@@ -1,0 +1,8 @@
+# Decisions - MultiTurnChatApp
+
+## Decision Log
+
+| Date | Decision | Rationale |
+|------|----------|----------|
+| 2026-08-15 | Project initiated | Automated project generation |
+| 2026-08-15 | Architecture selected | Based on project requirements |

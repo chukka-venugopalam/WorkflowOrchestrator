@@ -2,78 +2,44 @@
 
 ## System Architecture
 
-Layered architecture with presentation layer (UI components),
-application layer (services, controllers), domain layer (business logic),
-and infrastructure layer (database, external services).
-API gateway handles routing, authentication, and rate limiting.
-Frontend communicates with backend via RESTful API or GraphQL.
+Minimal, standalone single-package architecture for a web project.
+Focuses on core functionality in a clean, flat layout without multi-service overhead.
 
 ## Folder Structure
 
 ```
 README.md
-CHANGELOG.md
 ARCHITECTURE.md
-CONTRIBUTING.md
-LICENSE
 .gitignore
-.env.example
 package.json
 src/
-  components/
-  pages/
-  api/
-  lib/
-  utils/
-  styles/
-  hooks/
-  types/
-  middleware/
-public/
 tests/
-  unit/
-  integration/
-  e2e/
-scripts/
-config/
-docs/
-docker/
 ```
 
 ## Technology Stack
 
 - **Language:** TypeScript
-- **Framework:** Next.js 14+
+- **Framework:** React / Vite
 - **Styling:** Tailwind CSS
-- **State_Management:** Zustand / React Query
-- **Database:** PostgreSQL + Prisma ORM
-- **Api:** Next.js API Routes / tRPC
-- **Testing:** Vitest + Playwright
-- **Deployment:** Vercel / Docker
-- **Ci_Cd:** GitHub Actions
+- **State_Management:** Zustand
+- **Database:** SQLite
+- **Api:** REST API
+- **Testing:** Vitest
+- **Deployment:** Vercel / Local
 
 ## Services
 
-- **Auth Service:** Authentication and authorization
-- **API Gateway:** Request routing and rate limiting
-- **Data Service:** Data persistence and retrieval
-- **Cache Service:** In-memory caching for performance
-- **Notification Service:** Email, push, and in-app notifications
-- **File Storage Service:** File upload and content delivery
+- **Core Application Logic:** Handles primary features and state management
 
 ## Database
 
-- Primary: PostgreSQL
-- Cache: Redis
+- Primary: None (In-memory / Local File Storage)
+- Cache: None
 
 ## Communication Flow
 
-Client → API Gateway → Service Layer → Data Layer
-Synchronous: HTTP REST/gRPC for request-response patterns
-Asynchronous: Message queue for event-driven communication
-Caching: Redis cache between service and data layers
-Monitoring: Centralized logging and metrics collection
+Client Input → Application Controller → Service Layer → Data Storage
 
 ## Deployment
 
-Cloud provider (AWS/GCP/Azure) or Vercel/Railway
+Local execution / Standalone binary

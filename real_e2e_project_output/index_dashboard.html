@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>E-Learning Research Dashboard</title>
+    <style>body { font-family: sans-serif; margin: 2rem; background: #f4f6f8; }</style>
+</head>
+<body>
+    <h1>E-Learning Research Portal</h1>
+    <div id="course-list">Loading Interactive Courses...</div>
+    <script>
+        fetch("/courses").then(r => r.json()).then(data => {
+            document.getElementById("course-list").innerHTML = data.map(c => `<h3>${c.title}</h3>`).join("");
+        });
+    </script>
+</body>
+</html>

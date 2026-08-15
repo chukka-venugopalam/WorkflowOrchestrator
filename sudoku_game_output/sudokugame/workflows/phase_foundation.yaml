@@ -1,0 +1,76 @@
+name: Foundation - Phase
+description: 'Implementation phase: Foundation'
+tags:
+- foundation
+- builder
+steps:
+- name: Foundation Setup
+  plugin: agent
+  config:
+    task_id: task_foundation_setup
+    goal: Set up and prepare for Foundation
+    capabilities:
+    - reasoning.planning
+    - tool.filesystem
+    expected_outputs:
+    - foundation_setup_complete
+  on_failure: retry
+  retry:
+    max_retries: 1
+    delay: 1.0
+- name: Project Initialized
+  plugin: agent
+  config:
+    task_id: task_foundation_project_initialized
+    goal: 'Deliver: Repository created, CI/CD configured, Development environment
+      documented'
+    capabilities:
+    - codegen.implementation
+    - reasoning.problem-solving
+    expected_outputs:
+    - Repository created
+    - CI/CD configured
+    - Development environment documented
+    depends_on:
+    - task_foundation_setup
+  on_failure: retry
+  retry:
+    max_retries: 2
+    delay: 2.0
+- name: Core Architecture
+  plugin: agent
+  config:
+    task_id: task_foundation_core_architecture
+    goal: 'Deliver: Folder structure created, Dependency injection set up, Configuration
+      system'
+    capabilities:
+    - codegen.implementation
+    - reasoning.problem-solving
+    expected_outputs:
+    - Folder structure created
+    - Dependency injection set up
+    - Configuration system
+    depends_on:
+    - task_foundation_setup
+    - task_foundation_project_initialized
+  on_failure: retry
+  retry:
+    max_retries: 2
+    delay: 2.0
+- name: Verify Foundation
+  plugin: agent
+  config:
+    task_id: task_foundation_verify
+    goal: Verify all deliverables for Foundation
+    capabilities:
+    - verify.testing
+    - verify.lint
+    - verify.typecheck
+    expected_outputs:
+    - foundation_verification_report
+    depends_on:
+    - task_foundation_core_architecture
+  on_failure: retry
+  retry:
+    max_retries: 2
+    delay: 3.0

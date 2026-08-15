@@ -76,7 +76,11 @@ class TestAutonomousLoopEngine:
         assert len(decisions) >= 1
         assert decisions[0].action == "spawn_subtask"
 
-    def test_autonomous_project_loop_execution(self):
+    def test_autonomous_project_loop_execution(self, monkeypatch) -> None:
+        monkeypatch.setattr(
+            "workflow_orchestrator.integrations.transports.desktop_terminal_transport.DesktopTerminalTransport.send_prompt",
+            lambda self, prompt, **kw: "Mocked unit test response TASK COMPLETE",
+        )
         orch = Orchestrator.get_instance()
         loop = AutonomousProjectLoop(worker_registry=orch.worker_registry, project_root=Path.cwd(), max_loop_iterations=2)
 
