@@ -161,8 +161,12 @@ def handle_create_project(orchestrator: Orchestrator) -> None:
 
     if rec.status == "completed":
         console.print(f"\n[bold green]✓ Project '{rec.project_name}' created and built successfully at {resolved_path} in {rec.duration_seconds:.1f}s![/]")
+    elif rec.status == "partial":
+        failed_str = ", ".join(rec.failed_tasks) if rec.failed_tasks else "some tasks"
+        total_cnt = len(rec.failed_tasks) + len(rec.succeeded_tasks)
+        console.print(f"\n[bold yellow]⚠ Project '{rec.project_name}' partially failed:[/] {len(rec.failed_tasks)}/{total_cnt} tasks did not complete ({failed_str})")
     else:
-        console.print(f"\n[bold red]✗ Project build failed:[/] {rec.error}")
+        console.print(f"\n[bold red]✗ Project '{rec.project_name}' build failed:[/] {rec.error or 'Pipeline execution failed'}")
 
 
 def handle_continue_project(orchestrator: Orchestrator) -> None:

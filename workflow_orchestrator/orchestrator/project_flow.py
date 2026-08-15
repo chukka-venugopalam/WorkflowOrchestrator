@@ -54,6 +54,8 @@ from workflow_orchestrator.runtime.project_memory import ProjectMemory
 from workflow_orchestrator.execution.execution_engine import ExecutionEngine
 from workflow_orchestrator.core.event_bus import Event, EventBus
 
+from workflow_orchestrator.execution.parallel_task_queue import ParallelTaskQueue, TaskProgressState
+
 logger = logging.getLogger(__name__)
 
 
@@ -68,6 +70,8 @@ class FlowExecutionRecord:
     duration_seconds: float = 0.0
     status: str = "completed"
     error: Optional[str] = None
+    failed_tasks: List[str] = field(default_factory=list)
+    succeeded_tasks: List[str] = field(default_factory=list)
 
 
 class ProjectFlowEngine:
@@ -182,9 +186,30 @@ class ProjectFlowEngine:
             logger.info("Real Desktop Worker Queue Results: %s", queue_results)
 
             p_name = build_result.get("project_name", project_name or "ai_project")
-            success = build_result.get("success", True)
+            scaffold_success = build_result.get("success", True)
             dur = build_result.get("duration_seconds", 0.0)
             contract = build_result.get("contract")
+
+            # Evaluate real worker queue task completion outcomes
+            tasks_failed = [tid for tid, state in queue_results.items() if state == TaskProgressState.FAILED]
+            tasks_succeeded = [tid for tid, state in queue_results.items() if state == TaskProgressState.COMPLETED]
+            total_queue_tasks = len(queue_results)
+
+            if not scaffold_success:
+                final_status = "failed"
+                err_msg = build_result.get("error", "Scaffolding phase failed")
+            elif tasks_failed and tasks_succeeded:
+                final_status = "partial"
+                err_msg = f"{len(tasks_failed)}/{total_queue_tasks} tasks did not complete ({', '.join(tasks_failed)})"
+            elif tasks_failed and not tasks_succeeded:
+                final_status = "failed"
+                err_msg = f"{len(tasks_failed)}/{total_queue_tasks} tasks failed ({', '.join(tasks_failed)})"
+            elif total_queue_tasks > 0 and len(tasks_succeeded) == total_queue_tasks:
+                final_status = "completed"
+                err_msg = None
+            else:
+                final_status = "completed" if scaffold_success else "failed"
+                err_msg = None if final_status == "completed" else "Pipeline failed"
 
             # Step 3: Record Contract, Timeline, and Memory
             if contract:
@@ -200,7 +225,7 @@ class ProjectFlowEngine:
                 entries=[
                     {
                         "action": "project_build",
-                        "status": "completed" if success else "failed",
+                        "status": final_status,
                         "duration_seconds": dur,
                         "idea": idea,
                     }
@@ -208,21 +233,24 @@ class ProjectFlowEngine:
             )
             self.project_memory.append_timeline_entry(
                 {
-                    "event_type": "project_completed",
-                    "summary": f"Project {p_name} successfully built.",
+                    "event_type": f"project_{final_status}",
+                    "summary": f"Project {p_name} execution status: {final_status}.",
                 }
             )
 
             duration = time.time() - start_time
-            self._emit_event("project.flow.completed", {"project_name": p_name, "duration": duration})
+            self._emit_event(f"project.flow.{final_status}", {"project_name": p_name, "duration": duration, "failed_tasks": tasks_failed})
 
             return FlowExecutionRecord(
                 project_name=p_name,
                 idea_description=idea,
-                phase="completed",
+                phase=final_status if final_status != "completed" else "completed",
                 build_result=build_result,
                 duration_seconds=duration,
-                status="completed" if success else "failed",
+                status=final_status,
+                error=err_msg,
+                failed_tasks=tasks_failed,
+                succeeded_tasks=tasks_succeeded,
             )
 
         except Exception as exc:

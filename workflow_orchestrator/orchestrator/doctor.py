@@ -30,6 +30,7 @@ from workflow_orchestrator.orchestrator.discovery import AutoDiscovery
 from workflow_orchestrator.orchestrator.provider_manager import ProviderManager
 from workflow_orchestrator.orchestrator.mcp_manager import MCPManager
 from workflow_orchestrator.workers.worker_registry import DesktopWorkerRegistry
+from workflow_orchestrator.workers.desktop_worker import WorkerState
 
 logger = logging.getLogger(__name__)
 
@@ -98,16 +99,17 @@ class WorkflowDoctor:
         items.append(DiagnosticItem("Providers", "Registered Providers", "OK" if enabled_count > 0 else "WARNING", f"{enabled_count} provider(s) enabled out of {len(providers)}", "Configure providers in setup"))
         items.append(DiagnosticItem("Providers", "API Key Credentials", "OK" if key_count > 0 else "WARNING", f"{key_count} provider API key(s) configured", "Set ANTHROPIC_API_KEY / OPENAI_API_KEY / GEMINI_API_KEY / OPENROUTER_API_KEY"))
         
-        sim_providers = [p.name for p in providers if not p.api_key_configured]
-        if sim_providers:
-            items.append(DiagnosticItem("Providers", "Execution Mode", "INFO", f"Providers running in SIMULATION_MODE due to missing API keys: {', '.join(sim_providers)}", "Provide API keys for REAL_API execution"))
+        detected_provs = self.provider_mgr.detector.detect_all()
+        avail_provs = [p.provider_id for p in detected_provs if getattr(p, "available", False)]
+        if avail_provs:
+            items.append(DiagnosticItem("Providers", "Execution Mode", "OK", f"{len(avail_provs)} local/desktop/browser provider(s) detected & ready ({', '.join(avail_provs)})", None))
         else:
-            items.append(DiagnosticItem("Providers", "Execution Mode", "OK", "All registered providers configured for REAL_API execution", None))
+            items.append(DiagnosticItem("Providers", "Execution Mode", "WARNING", "No local desktop, CLI, or browser AI providers detected on this machine", "Install Claude Code, ChatGPT Desktop, Copilot, or ensure Chrome/Edge browser is installed"))
 
         # 4. Workers
         self.worker_registry.discover_and_start_all()
-        workers = self.worker_registry.list_workers()
-        active_workers = [w for w in workers if w.state not in (WorkerState.STOPPED, WorkerState.FAILED)]
+        workers = self.worker_registry.list_workers(active_only=False)
+        active_workers = [w for w in workers if getattr(w, "state", None) not in (WorkerState.STOPPED, WorkerState.FAILED)]
         items.append(DiagnosticItem("Workers", "Desktop Workers", "OK" if active_workers else "INFO", f"{len(active_workers)} active desktop worker(s) out of {len(workers)} total", None))
 
         # 5. MCP Servers

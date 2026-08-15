@@ -55,7 +55,7 @@ class BootReport:
 
 
 class BootSequence:
-    """Executes the 14-step Boot Sequence for the AI Operating System.
+    """Executes the 15-step Boot Sequence for the AI Operating System.
 
     Steps:
     1. Initialize Kernel
@@ -63,15 +63,16 @@ class BootSequence:
     3. Load Profiles
     4. Load Providers
     5. Load Agents
-    6. Load Plugins
-    7. Load Workflows
-    8. Load Knowledge Base
-    9. Load Contracts
-    10. Load Sessions
-    11. Load Project Memory
-    12. Register Services
-    13. Run Health Checks
-    14. Show Startup Dashboard
+    6. Start Desktop Workers
+    7. Load Plugins
+    8. Load Workflows
+    9. Load Knowledge Base
+    10. Load Contracts
+    11. Load Sessions
+    12. Load Project Memory
+    13. Register Services
+    14. Run Health Checks
+    15. Show Startup Dashboard
     """
 
     STEP_NAMES = [
@@ -80,6 +81,7 @@ class BootSequence:
         "Load Profiles",
         "Load Providers",
         "Load Agents",
+        "Start Desktop Workers",
         "Load Plugins",
         "Load Workflows",
         "Load Knowledge Base",
@@ -96,7 +98,7 @@ class BootSequence:
         self.results: List[BootStepResult] = []
 
     def execute(self, show_dashboard: bool = True) -> BootReport:
-        """Execute all 14 boot steps synchronously.
+        """Execute all 15 boot steps synchronously.
 
         Returns:
             BootReport containing detailed results of each step.
@@ -111,15 +113,16 @@ class BootSequence:
             self._step_3_load_profiles,
             self._step_4_load_providers,
             self._step_5_load_agents,
-            self._step_6_load_plugins,
-            self._step_7_load_workflows,
-            self._step_8_load_knowledge,
-            self._step_9_load_contracts,
-            self._step_10_load_sessions,
-            self._step_11_load_memory,
-            self._step_12_register_services,
-            self._step_13_run_health_checks,
-            lambda: self._step_14_show_dashboard(show_dashboard),
+            self._step_6_start_workers,
+            self._step_7_load_plugins,
+            self._step_8_load_workflows,
+            self._step_9_load_knowledge,
+            self._step_10_load_contracts,
+            self._step_11_load_sessions,
+            self._step_12_load_memory,
+            self._step_13_register_services,
+            self._step_14_run_health_checks,
+            lambda: self._step_15_show_dashboard(show_dashboard),
         ]
 
         overall_success = True
@@ -196,54 +199,62 @@ class BootSequence:
         installed = [a.agent_id for a in detected if getattr(a, "available", False)]
         return f"Discovered {len(detected)} agent(s), {len(installed)} active ({', '.join(installed) if installed else 'none'})"
 
-    def _step_6_load_plugins(self) -> str:
-        """Step 6: Load Plugins."""
+    def _step_6_start_workers(self) -> str:
+        """Step 6: Start Desktop Workers."""
+        from workflow_orchestrator.orchestrator.orchestrator import Orchestrator
+        orch = Orchestrator.get_instance()
+        started_count = orch.worker_registry.discover_and_start_all()
+        total_workers = len(orch.worker_registry.list_workers(active_only=False))
+        return f"Discovered and started {started_count} active desktop worker(s) out of {total_workers} registered"
+
+    def _step_7_load_plugins(self) -> str:
+        """Step 7: Load Plugins."""
         count = self.kernel.discover_plugins()
         return f"Discovered {count} plugin(s) via Kernel plugin discovery"
 
-    def _step_7_load_workflows(self) -> str:
-        """Step 7: Load Workflows."""
+    def _step_8_load_workflows(self) -> str:
+        """Step 8: Load Workflows."""
         loader = WorkflowLoader()
         self.kernel.registry.register_instance("workflow_loader", loader, overwrite=True)
         fmts = list(loader.supported_formats()) if callable(getattr(loader, "supported_formats", None)) else ["yaml", "json"]
         formats = ", ".join(fmts)
         return f"WorkflowLoader initialized (supported formats: {formats})"
 
-    def _step_8_load_knowledge(self) -> str:
-        """Step 8: Load Knowledge Base."""
+    def _step_9_load_knowledge(self) -> str:
+        """Step 9: Load Knowledge Base."""
         kb = KnowledgeBase()
         if not self.kernel.registry.has_service("knowledge_base"):
             self.kernel.registry.register_instance("knowledge_base", kb)
         return f"Knowledge Base loaded ({kb.store.count} entry/entries)"
 
-    def _step_9_load_contracts(self) -> str:
-        """Step 9: Load Contracts."""
+    def _step_10_load_contracts(self) -> str:
+        """Step 10: Load Contracts."""
         cm = ContractManager()
         if not self.kernel.registry.has_service("contract_manager"):
             self.kernel.registry.register_instance("contract_manager", cm)
         return "ContractManager initialized"
 
-    def _step_10_load_sessions(self) -> str:
-        """Step 10: Load Sessions."""
+    def _step_11_load_sessions(self) -> str:
+        """Step 11: Load Sessions."""
         sm = SessionManager()
         if not self.kernel.registry.has_service("session_manager"):
             self.kernel.registry.register_instance("session_manager", sm)
         return f"SessionManager loaded ({sm.count} total session(s))"
 
-    def _step_11_load_memory(self) -> str:
-        """Step 11: Load Project Memory."""
+    def _step_12_load_memory(self) -> str:
+        """Step 12: Load Project Memory."""
         memory = ProjectMemory(project_dir=Path.cwd())
         if not self.kernel.registry.has_service("project_memory"):
             self.kernel.registry.register_instance("project_memory", memory)
         return f"ProjectMemory bound to {memory.project_dir}"
 
-    def _step_12_register_services(self) -> str:
-        """Step 12: Register Services."""
+    def _step_13_register_services(self) -> str:
+        """Step 13: Register Services."""
         services = self.kernel.registry.list_services()
         return f"ServiceRegistry active with {len(services)} registered service(s)"
 
-    def _step_13_run_health_checks(self) -> str:
-        """Step 13: Run Health Checks."""
+    def _step_14_run_health_checks(self) -> str:
+        """Step 14: Run Health Checks."""
         if self.kernel.registry.has_service("health_monitor"):
             hm: HealthMonitor = self.kernel.get_service("health_monitor")
             report: HealthReport = hm.check_all()
@@ -251,8 +262,8 @@ class BootSequence:
             return f"HealthMonitor checked system: overall status = {st_val.upper()}"
         return "Health check passed"
 
-    def _step_14_show_dashboard(self, show_dashboard: bool) -> str:
-        """Step 14: Show Startup Dashboard."""
+    def _step_15_show_dashboard(self, show_dashboard: bool) -> str:
+        """Step 15: Show Startup Dashboard."""
         if show_dashboard:
             from workflow_orchestrator.orchestrator.dashboard import StartupDashboard
             StartupDashboard.render_boot_summary(self.results)

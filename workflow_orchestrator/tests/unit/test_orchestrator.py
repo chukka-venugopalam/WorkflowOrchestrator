@@ -24,7 +24,7 @@ class TestBootSequence:
         boot = BootSequence()
         report = boot.execute(show_dashboard=False)
         assert report.success is True
-        assert len(report.steps) == 14
+        assert len(report.steps) == 15
         assert report.failed_steps == []
 
 

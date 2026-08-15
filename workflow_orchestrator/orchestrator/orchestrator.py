@@ -33,6 +33,7 @@ from workflow_orchestrator.orchestrator.first_run import SetupWizard, SetupConfi
 from workflow_orchestrator.orchestrator.project_flow import ProjectFlowEngine, FlowExecutionRecord
 from workflow_orchestrator.orchestrator.self_healing import SelfHealingEngine
 from workflow_orchestrator.orchestrator.dashboard import StartupDashboard, ProjectDashboard
+from workflow_orchestrator.integrations.health_monitor import HealthMonitor
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +75,13 @@ class Orchestrator:
         self.worker_registry = DesktopWorkerRegistry()
         self._register_default_desktop_workers()
         self.discovery = AutoDiscovery()
-        self.doctor = WorkflowDoctor()
+        self.doctor = WorkflowDoctor(
+            health_monitor=HealthMonitor(),
+            discovery=self.discovery,
+            provider_manager=self.provider_manager,
+            worker_registry=self.worker_registry,
+            mcp_manager=self.mcp_manager,
+        )
         self.setup_wizard = SetupWizard()
         self.project_flow = ProjectFlowEngine()
         self.self_healing = SelfHealingEngine()
@@ -98,6 +105,10 @@ class Orchestrator:
         self.worker_registry.register_worker(OptionalWebDesktopWorker("chatgpt"))
         self.worker_registry.register_worker(OptionalWebDesktopWorker("claude"))
         self.worker_registry.register_worker(OptionalWebDesktopWorker("gemini"))
+
+        started = self.worker_registry.discover_and_start_all()
+        total = len(self.worker_registry.list_workers(active_only=False))
+        logger.info("Registered %d desktop workers; discovered and started %d active worker(s).", total, started)
 
     @classmethod
     def get_instance(cls) -> "Orchestrator":
