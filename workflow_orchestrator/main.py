@@ -121,7 +121,7 @@ def handle_create_project(orchestrator: Orchestrator) -> None:
     name_val = name.strip() if name.strip() else None
 
     # Resolve project folder name & output directory
-    clean_idea = re.sub(r'[^a-zA-Z0-9_-]', '_', idea[:25].strip().lower()).strip('_')
+    clean_idea = re.sub(r'[^a-zA-Z0-9_-]+', '_', idea[:25].strip().lower()).strip('_')
     folder_name = name_val if name_val else (clean_idea or f"project_{int(time.time())}")
 
     config_mgr = ConfigurationManager()

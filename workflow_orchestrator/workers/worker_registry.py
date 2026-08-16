@@ -58,7 +58,9 @@ class DesktopWorkerRegistry:
         """Discover and auto-start available desktop workers."""
         started_count = 0
         for worker in self._workers.values():
-            if worker.discover():
+            is_disc = worker.discover()
+            logger.debug("Worker %s discover()=%s, state=%s", worker.worker_id, is_disc, getattr(worker, "state", None))
+            if is_disc:
                 if worker.start():
                     started_count += 1
         return started_count

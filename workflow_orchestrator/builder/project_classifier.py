@@ -291,11 +291,7 @@ class ProjectClassifier:
 
                 avail = sorted(avail, key=_transport_priority)
                 if avail:
-                    prompt = (
-                        f"Given this project description: '{description}', reply with exactly one project type from this fixed list: "
-                        "[web, mobile, desktop, cli, ai, ml, embedded, robotics, research, education, enterprise, game, api, library, infrastructure, hybrid] "
-                        "and one scale from [minimal, standard, large]. Reply with only those two words separated by a space."
-                    )
+                    prompt = self.build_rich_consultation_prompt(description)
                     for prov in avail:
                         try:
                             resp_text = provider_manager.invoke_provider(prov.provider_id, prompt)
@@ -332,8 +328,21 @@ class ProjectClassifier:
         logger.warning("Disambiguation unresolved — defaulting to '%s/%s'", primary.value, scale.value)
         return primary, scale
 
+    def build_rich_consultation_prompt(self, description: str) -> str:
+        """Build a rich architecture consultation prompt for conversational providers."""
+        return (
+            f"You are an AI Architecture Consultant. Analyze this project idea:\n"
+            f"'{description}'\n\n"
+            "Provide a structured project specification with the following four sections:\n"
+            "1. Project Category: [web, mobile, desktop, cli, ai, ml, embedded, robotics, research, education, enterprise, game, api, library, infrastructure, hybrid]\n"
+            "2. Complexity: [easy, medium, large]\n"
+            "3. Recommended Tech Stack: List frontend, backend, database, or frameworks.\n"
+            "4. Implementation Details: Key modules, state management, assets, and deployment targets.\n\n"
+            "Keep the response concise and clearly structured."
+        )
+
     def _parse_disambiguation_response(self, text: str) -> tuple[ProjectType, ProjectScale]:
-        """Defensively parse provider structured reply for type and scale."""
+        """Defensively parse provider structured reply for type and scale/complexity."""
         if not text or not text.strip():
             return ProjectType.UNKNOWN, ProjectScale.STANDARD
 
@@ -342,6 +351,18 @@ class ProjectClassifier:
         found_type = ProjectType.UNKNOWN
         found_scale = ProjectScale.STANDARD
 
+        complexity_map = {
+            "easy": ProjectScale.MINIMAL,
+            "simple": ProjectScale.MINIMAL,
+            "minimal": ProjectScale.MINIMAL,
+            "medium": ProjectScale.STANDARD,
+            "standard": ProjectScale.STANDARD,
+            "moderate": ProjectScale.STANDARD,
+            "large": ProjectScale.LARGE,
+            "complex": ProjectScale.LARGE,
+            "enterprise": ProjectScale.LARGE,
+        }
+
         for token in tokens:
             try:
                 pt = ProjectType(token)
@@ -349,11 +370,15 @@ class ProjectClassifier:
                     found_type = pt
             except ValueError:
                 pass
-            try:
-                ps = ProjectScale(token)
-                found_scale = ps
-            except ValueError:
-                pass
+
+            if token in complexity_map:
+                found_scale = complexity_map[token]
+            else:
+                try:
+                    ps = ProjectScale(token)
+                    found_scale = ps
+                except ValueError:
+                    pass
 
         return found_type, found_scale
 

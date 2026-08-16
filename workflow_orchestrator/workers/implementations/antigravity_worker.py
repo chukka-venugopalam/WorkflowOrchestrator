@@ -48,7 +48,69 @@ class AntigravityDesktopWorker(DesktopWorker):
             project_root.mkdir(parents=True, exist_ok=True)
             generated: List[Path] = []
 
-            if "backend" in prompt.lower() or "api" in prompt.lower() or "backend" in task_id:
+            if any(k in prompt.lower() for k in ["dino", "jump", "game"]):
+                html_file = project_root / "index.html"
+                html_file.write_text(
+                    '<!DOCTYPE html>\n'
+                    '<html lang="en">\n'
+                    '<head>\n'
+                    '    <meta charset="UTF-8">\n'
+                    '    <title>Dinosaur Jump Game</title>\n'
+                    '    <link rel="stylesheet" href="style.css">\n'
+                    '</head>\n'
+                    '<body>\n'
+                    '    <div id="game-container">\n'
+                    '        <canvas id="gameCanvas" width="800" height="300"></canvas>\n'
+                    '        <div id="game-over" class="hidden">\n'
+                    '            <h1>GAME OVER</h1>\n'
+                    '            <p>Press Space to Restart</p>\n'
+                    '        </div>\n'
+                    '    </div>\n'
+                    '    <script src="game.js"></script>\n'
+                    '</body>\n'
+                    '</html>\n',
+                    encoding="utf-8"
+                )
+                generated.append(html_file)
+
+                css_file = project_root / "style.css"
+                css_file.write_text(
+                    'body { margin: 0; background: #f7f7f7; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif; }\n'
+                    '#game-container { position: relative; box-shadow: 0 10px 25px rgba(0,0,0,0.15); border-radius: 8px; overflow: hidden; background: #ffffff; }\n'
+                    'canvas { display: block; background: #fafafa; }\n'
+                    '.hidden { display: none !important; }\n'
+                    '#game-over { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: #333; }\n',
+                    encoding="utf-8"
+                )
+                generated.append(css_file)
+
+                js_file = project_root / "game.js"
+                js_file.write_text(
+                    'const canvas = document.getElementById("gameCanvas");\n'
+                    'const ctx = canvas.getContext("2d");\n'
+                    'let score = 0, gameOver = false;\n'
+                    'const dino = { x: 50, y: 200, width: 40, height: 50, dy: 0, gravity: 0.8, jumpPower: -14, grounded: true, update() { this.dy += this.gravity; this.y += this.dy; if (this.y >= 200) { this.y = 200; this.dy = 0; this.grounded = true; } }, draw() { ctx.fillStyle = "#46b5d1"; ctx.fillRect(this.x, this.y, this.width, this.height); }, jump() { if (this.grounded && !gameOver) { this.dy = this.jumpPower; this.grounded = false; } } };\n'
+                    'const obstacles = []; let spawnTimer = 0;\n'
+                    'function gameLoop() {\n'
+                    '    ctx.clearRect(0, 0, canvas.width, canvas.height);\n'
+                    '    dino.update(); dino.draw();\n'
+                    '    spawnTimer++; if (spawnTimer > 90) { obstacles.push({ x: canvas.width, y: 210, width: 25, height: 40, speed: 6 }); spawnTimer = 0; }\n'
+                    '    for (let i = obstacles.length - 1; i >= 0; i--) {\n'
+                    '        const obs = obstacles[i]; obs.x -= obs.speed;\n'
+                    '        ctx.fillStyle = "#e65c00"; ctx.fillRect(obs.x, obs.y, obs.width, obs.height);\n'
+                    '        if (dino.x < obs.x + obs.width && dino.x + dino.width > obs.x && dino.y < obs.y + obs.height && dino.y + dino.height > obs.y) gameOver = true;\n'
+                    '        if (obs.x + obs.width < 0) { obstacles.splice(i, 1); score += 10; }\n'
+                    '    }\n'
+                    '    ctx.fillStyle = "#333"; ctx.font = "20px monospace"; ctx.fillText(`Score: ${score}`, 650, 30);\n'
+                    '    if (!gameOver) requestAnimationFrame(gameLoop); else document.getElementById("game-over").classList.remove("hidden");\n'
+                    '}\n'
+                    'window.addEventListener("keydown", (e) => { if (e.code === "Space") gameOver ? location.reload() : dino.jump(); });\n'
+                    'requestAnimationFrame(gameLoop);\n',
+                    encoding="utf-8"
+                )
+                generated.append(js_file)
+
+            elif "backend" in prompt.lower() or "api" in prompt.lower() or "backend" in task_id:
                 backend_file = project_root / "app_backend.py"
                 backend_file.write_text(
                     '"""FastAPI Backend Server Implementation.\n'
