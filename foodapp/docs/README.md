@@ -6,10 +6,14 @@ Create a build a food delivery platform that delivers an exceptional user experi
 
 ## Tech Stack
 
-- **Language:** Python
-- **Framework:** Standard Library
-- **Testing:** pytest
-- **Deployment:** Local execution
+- **Language:** TypeScript
+- **Framework:** Next.js 14+
+- **Styling:** Tailwind CSS
+- **State_Management:** Zustand
+- **Database:** PostgreSQL + Prisma ORM
+- **Api:** REST API
+- **Testing:** Vitest
+- **Deployment:** Vercel / Local
 
 ## Getting Started
 
@@ -41,15 +45,22 @@ cp .env.example .env
 README.md
 ARCHITECTURE.md
 .gitignore
-pyproject.toml
-app/
-    screens/
+package.json
+src/
     components/
-    services/
-    assets/
-ios/
-android/
+    pages/
+    api/
+    lib/
+    utils/
+    styles/
+    hooks/
+    types/
+public/
 tests/
+    unit/
+    integration/
+scripts/
+config/
 docs/
 ```
 

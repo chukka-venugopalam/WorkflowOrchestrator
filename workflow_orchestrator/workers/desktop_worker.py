@@ -49,6 +49,8 @@ class DesktopWorkerTaskResult:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
 
+import re
+
 COMPLETION_MARKERS: List[str] = [
     "task complete",
     "task completed",
@@ -57,10 +59,25 @@ COMPLETION_MARKERS: List[str] = [
     "successfully completed",
     "execution complete",
     "all tasks complete",
-    "done",
-    "complete",
-    "finished",
 ]
+
+COMPLETION_MARKER_REGEX = re.compile(
+    r"\b(" + "|".join(re.escape(m) for m in COMPLETION_MARKERS) + r")\b",
+    re.IGNORECASE,
+)
+
+
+def get_workspace_snapshot(workspace_dir: Path) -> Dict[Path, float]:
+    """Capture mtime snapshot of all non-hidden files in workspace_dir."""
+    snapshot: Dict[Path, float] = {}
+    if workspace_dir.exists():
+        for p in workspace_dir.rglob("*"):
+            if p.is_file() and not any(part.startswith(".") for part in p.parts):
+                try:
+                    snapshot[p] = p.stat().st_mtime
+                except OSError:
+                    pass
+    return snapshot
 
 
 class DesktopWorker:
@@ -105,8 +122,12 @@ class DesktopWorker:
             self.state = WorkerState.BUSY
             try:
                 result = self._execute_conversational_loop(task_payload)
-                self.state = WorkerState.IDLE
-                self.failed_at = None
+                if result.success:
+                    self.state = WorkerState.IDLE
+                    self.failed_at = None
+                else:
+                    self.state = WorkerState.FAILED
+                    self.failed_at = time.time()
                 result.duration_seconds = time.time() - t0
                 return result
             except Exception as e:
@@ -130,18 +151,7 @@ class DesktopWorker:
         all_generated_files: List[Path] = []
         current_prompt = base_prompt
 
-        def get_workspace_snapshot() -> Dict[Path, float]:
-            snapshot = {}
-            if workspace_dir.exists():
-                for p in workspace_dir.rglob("*"):
-                    if p.is_file() and not any(part.startswith(".") for part in p.parts):
-                        try:
-                            snapshot[p] = p.stat().st_mtime
-                        except OSError:
-                            pass
-            return snapshot
-
-        initial_snapshot = get_workspace_snapshot()
+        initial_snapshot = get_workspace_snapshot(workspace_dir)
         turn_start_snapshot = initial_snapshot
 
         for turn in range(1, max_turns + 1):
@@ -166,7 +176,7 @@ class DesktopWorker:
                     if gf not in all_generated_files:
                         all_generated_files.append(gf)
 
-            current_snapshot = get_workspace_snapshot()
+            current_snapshot = get_workspace_snapshot(workspace_dir)
             files_changed_this_turn = any(
                 p not in turn_start_snapshot or current_snapshot[p] > turn_start_snapshot[p]
                 for p in current_snapshot
@@ -177,16 +187,15 @@ class DesktopWorker:
                 for p in current_snapshot
             ) or bool(all_generated_files)
 
-            resp_lower = resp_text.lower()
-            marker_found = any(m in resp_lower for m in COMPLETION_MARKERS)
+            marker_found = bool(COMPLETION_MARKER_REGEX.search(resp_text))
 
             allow_no_file_changes = task_payload.get("allow_no_file_changes", False)
             force_single_turn = task_payload.get("force_single_turn", False)
 
-            if allow_no_file_changes:
-                completion_detected = marker_found or force_single_turn or turn_result.success
-            elif force_single_turn:
+            if force_single_turn:
                 completion_detected = True
+            elif allow_no_file_changes:
+                completion_detected = marker_found
             else:
                 completion_detected = marker_found and files_changed_overall
 

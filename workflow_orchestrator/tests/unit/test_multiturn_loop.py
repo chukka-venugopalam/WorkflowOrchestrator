@@ -125,3 +125,23 @@ class TestMultiTurnConversationLoop:
         assert worker.turn_count == 3
         assert "did not reach completion within 3 turns" in (res.error_message or "")
         assert res.metadata.get("completion_detected") is False
+
+    def test_substring_incomplete_not_matched(self, tmp_path: Path) -> None:
+        class IncompleteWordWorker(DesktopWorker):
+            def discover(self) -> bool:
+                return True
+
+            def _execute_desktop_task(self, task_payload: Dict[str, Any]) -> DesktopWorkerTaskResult:
+                workspace_dir = Path(task_payload.get("workspace_dir", Path.cwd()))
+                (workspace_dir / "file.txt").write_text("mod")
+                return DesktopWorkerTaskResult(
+                    success=True,
+                    output_text="The task remains incomplete, still working on tests.",
+                )
+
+        worker = IncompleteWordWorker(worker_id="inc_worker", name="Incomplete Worker")
+        res = worker.execute({"task_id": "inc_task", "workspace_dir": str(tmp_path), "max_turns": 2})
+
+        assert res.success is False
+        assert "did not reach completion within 2 turns" in (res.error_message or "")
+        assert res.metadata.get("completion_detected") is False

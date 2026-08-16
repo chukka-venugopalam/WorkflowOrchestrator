@@ -2,8 +2,9 @@
 
 ## System Architecture
 
-Clean Architecture with UI view layer, domain state management,
-and local data persistence.
+Layered architecture with presentation layer (UI components),
+application layer (services, controllers), and domain layer.
+Communicates via HTTP RESTful or GraphQL endpoints.
 
 ## Folder Structure
 
@@ -11,34 +12,47 @@ and local data persistence.
 README.md
 ARCHITECTURE.md
 .gitignore
-pyproject.toml
-app/
-  screens/
+package.json
+src/
   components/
-  services/
-  assets/
-ios/
-android/
+  pages/
+  api/
+  lib/
+  utils/
+  styles/
+  hooks/
+  types/
+public/
 tests/
+  unit/
+  integration/
+scripts/
+config/
 docs/
 ```
 
 ## Technology Stack
 
-- **Language:** Python
-- **Framework:** Standard Library
-- **Testing:** pytest
-- **Deployment:** Local execution
+- **Language:** TypeScript
+- **Framework:** Next.js 14+
+- **Styling:** Tailwind CSS
+- **State_Management:** Zustand
+- **Database:** PostgreSQL + Prisma ORM
+- **Api:** REST API
+- **Testing:** Vitest
+- **Deployment:** Vercel / Local
 
 ## Services
 
 - **Application Logic:** Core domain rules and state
 - **Data Storage Service:** Local or remote data persistence
+- **Auth Service:** Authentication and authorization
+- **API Gateway:** Routing and validation
 
 ## Database
 
-- Primary: SQLite
-- Cache: In-memory LRU
+- Primary: PostgreSQL
+- Cache: Redis
 
 ## Communication Flow
 

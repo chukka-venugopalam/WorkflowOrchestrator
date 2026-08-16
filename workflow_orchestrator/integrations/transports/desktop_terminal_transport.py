@@ -73,6 +73,7 @@ class DesktopTerminalTransport:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
+                errors="replace",
                 cwd=target_cwd,
                 shell=False,
             )

@@ -261,6 +261,7 @@ class ParallelTaskQueue:
             "task_id": task.task_id,
             "prompt": task.prompt,
             "workspace_dir": str(workspace_dir),
+            "max_turns": getattr(task, "max_turns", 8),
         }
         res = worker.execute(task_payload)
 
