@@ -80,10 +80,12 @@ class DesktopTerminalTransport:
             try:
                 stdout, stderr = proc.communicate(input=prompt, timeout=timeout_seconds)
                 output = (stdout or stderr or "").strip()
-                if not output and proc.returncode == 0:
-                    output = f"Command '{self.executable_name}' executed cleanly (Exit code 0)."
-                elif not output and proc.returncode != 0:
-                    output = f"Command '{self.executable_name}' exited with code {proc.returncode}."
+                if proc.returncode != 0:
+                    err_msg = output or f"Command '{self.executable_name}' exited with code {proc.returncode}."
+                    logger.warning("CLI command '%s' failed with exit code %d: %s", self.executable_name, proc.returncode, err_msg)
+                    raise RuntimeError(f"CLI process '{self.executable_name}' failed (exit code {proc.returncode}): {err_msg}")
+                if not output:
+                    raise RuntimeError(f"CLI command '{self.executable_name}' completed with exit code 0 but produced empty output.")
                 return output
             except subprocess.TimeoutExpired:
                 import sys
@@ -95,13 +97,15 @@ class DesktopTerminalTransport:
                 else:
                     proc.kill()
                 try:
-                    stdout, stderr = proc.communicate(timeout=1.0)
+                    proc.communicate(timeout=1.0)
                 except Exception:
                     pass
-                logger.warning(f"Real CLI command '{self.executable_name}' timed out after {timeout_seconds}s.")
-                return f"Process '{self.executable_name}' timed out after {timeout_seconds} seconds."
+                logger.warning("Real CLI command '%s' timed out after %.1fs.", self.executable_name, timeout_seconds)
+                raise TimeoutError(f"CLI process '{self.executable_name}' timed out after {timeout_seconds} seconds.")
+        except (TimeoutError, RuntimeError):
+            raise
         except Exception as e:
-            logger.error(f"Real CLI execution error for '{self.executable_name}': {e}")
+            logger.error("Real CLI execution error for '%s': %s", self.executable_name, e)
             raise RuntimeError(f"Real execution failed for '{self.executable_name}': {e}") from e
 
     def terminate_session(self) -> None:
