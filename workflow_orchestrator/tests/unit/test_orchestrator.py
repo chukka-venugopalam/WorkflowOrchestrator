@@ -5,6 +5,8 @@ from __future__ import annotations
 import pytest
 from pathlib import Path
 
+from workflow_orchestrator.workers.desktop_worker import DesktopWorkerTaskResult
+from workflow_orchestrator.builder.project_classifier import ProjectType, ProjectScale
 from workflow_orchestrator.orchestrator import (
     Orchestrator,
     BootSequence,
@@ -211,9 +213,30 @@ class TestSetupWizard:
 
 class TestProjectFlowEngine:
     def test_execute_project_from_prompt(self, tmp_path: Path, monkeypatch) -> None:
+        target_dir = tmp_path / "tourism_ai"
+        target_dir.mkdir(parents=True, exist_ok=True)
+
+        (target_dir / "app.py").write_text("print('hello')", encoding="utf-8")
+
+        def mock_exec(self, payload):
+            (target_dir / "app.py").write_text("print('hello')", encoding="utf-8")
+            return DesktopWorkerTaskResult(
+                success=True,
+                output_text="Mock task completed. TASK COMPLETE.",
+                generated_files=[target_dir / "app.py"],
+            )
+
+        for cls_path in [
+            "workflow_orchestrator.workers.desktop_worker.DesktopWorker",
+            "workflow_orchestrator.workers.implementations.opencode_worker.OpenCodeDesktopWorker",
+            "workflow_orchestrator.workers.implementations.antigravity_worker.AntigravityDesktopWorker",
+            "workflow_orchestrator.workers.implementations.copilot_worker.CopilotDesktopWorker",
+            "workflow_orchestrator.workers.implementations.optional_web_worker.OptionalWebDesktopWorker",
+        ]:
+            monkeypatch.setattr(f"{cls_path}._execute_desktop_task", mock_exec)
         monkeypatch.setattr(
-            "workflow_orchestrator.integrations.transports.desktop_terminal_transport.DesktopTerminalTransport.send_prompt",
-            lambda self, prompt, **kw: "Mocked unit test response TASK COMPLETE",
+            "workflow_orchestrator.builder.project_classifier.ProjectClassifier.classify_with_disambiguation",
+            lambda self, *args, **kwargs: (ProjectType.WEB, ProjectScale.STANDARD),
         )
         pfe = ProjectFlowEngine()
         rec = pfe.execute_project_from_prompt(

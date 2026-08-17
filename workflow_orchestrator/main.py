@@ -201,7 +201,9 @@ def handle_list_projects(orchestrator: Orchestrator) -> None:
     table.add_column("Tasks", justify="right")
 
     for s in sessions:
-        table.add_row(s.session_id, s.project_id or "default", s.state, str(len(s.tasks)))
+        state_str = s.state.value if hasattr(s.state, "value") else str(s.state)
+        task_count = str(len(getattr(s, "task_history", [])))
+        table.add_row(s.session_id, s.project or "default", state_str, task_count)
 
     console.print(table)
 

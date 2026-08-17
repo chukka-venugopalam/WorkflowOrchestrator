@@ -81,9 +81,10 @@ class WorkflowDoctor:
         """Run all diagnostic suites and generate a report."""
         items: List[DiagnosticItem] = []
 
-        # 1. Python & Venv
+        # 1. Python & Venv & Dependencies
         items.append(self._check_python_environment())
         items.append(self._check_virtual_env())
+        items.extend(self._check_optional_dependencies())
 
         # 2. Tools & CLI
         audit = self.discovery.run_full_discovery()
@@ -139,6 +140,42 @@ class WorkflowDoctor:
         if in_venv:
             return DiagnosticItem("Python", "Virtual Environment", "OK", f"Active virtual environment ({sys.prefix})")
         return DiagnosticItem("Python", "Virtual Environment", "INFO", "Running outside virtual environment")
+
+    def _check_optional_dependencies(self) -> List[DiagnosticItem]:
+        """Check availability of load-bearing optional automation dependencies."""
+        import importlib
+        load_bearing_packages = [
+            ("pywinauto", "pywinauto"),
+            ("pyautogui", "pyautogui"),
+            ("pytesseract", "pytesseract"),
+            ("mss", "mss"),
+            ("Pillow", "PIL"),
+            ("pyperclip", "pyperclip"),
+            ("playwright", "playwright"),
+        ]
+        results = []
+        for pkg_name, module_name in load_bearing_packages:
+            try:
+                importlib.import_module(module_name)
+                results.append(
+                    DiagnosticItem(
+                        category="Dependencies",
+                        name=f"Package {pkg_name}",
+                        status="OK",
+                        message=f"Optional automation package '{pkg_name}' ({module_name}) is installed",
+                    )
+                )
+            except ImportError:
+                results.append(
+                    DiagnosticItem(
+                        category="Dependencies",
+                        name=f"Package {pkg_name}",
+                        status="WARNING",
+                        message=f"Missing load-bearing optional package '{pkg_name}'",
+                        remedy=f"pip install {pkg_name}",
+                    )
+                )
+        return results
 
     def _check_workspace_permissions(self) -> DiagnosticItem:
         cwd = Path.cwd()

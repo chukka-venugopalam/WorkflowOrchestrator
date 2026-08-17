@@ -1,15 +1,15 @@
 {
-  "project_id": "27cc4aed1ee2",
-  "project_name": "dinosaur__jump_game",
-  "project_type": "game",
+  "project_id": "ae4b929ab668",
+  "project_name": "tourism_ai",
+  "project_type": "web",
   "status": "completed",
   "current_phase": "completed",
   "phases": {
     "classifying": {
       "phase": "classifying",
       "status": "completed",
-      "started_at": "2026-08-16T03:18:39.173256+00:00",
-      "completed_at": "2026-08-16T03:18:39.197889+00:00",
+      "started_at": "2026-08-17T16:55:10.440146+00:00",
+      "completed_at": "2026-08-17T16:55:10.449647+00:00",
       "completed_tasks": [],
       "failed_tasks": [],
       "artifacts": [],
@@ -18,8 +18,8 @@
     "requirements": {
       "phase": "requirements",
       "status": "completed",
-      "started_at": "2026-08-16T03:18:39.197889+00:00",
-      "completed_at": "2026-08-16T03:18:39.199959+00:00",
+      "started_at": "2026-08-17T16:55:10.449647+00:00",
+      "completed_at": "2026-08-17T16:55:10.452781+00:00",
       "completed_tasks": [],
       "failed_tasks": [],
       "artifacts": [],
@@ -28,8 +28,8 @@
     "architecture": {
       "phase": "architecture",
       "status": "completed",
-      "started_at": "2026-08-16T03:18:39.199959+00:00",
-      "completed_at": "2026-08-16T03:18:39.213014+00:00",
+      "started_at": "2026-08-17T16:55:10.452781+00:00",
+      "completed_at": "2026-08-17T16:55:10.463003+00:00",
       "completed_tasks": [],
       "failed_tasks": [],
       "artifacts": [],
@@ -38,8 +38,8 @@
     "planning": {
       "phase": "planning",
       "status": "completed",
-      "started_at": "2026-08-16T03:18:39.213014+00:00",
-      "completed_at": "2026-08-16T03:18:39.214449+00:00",
+      "started_at": "2026-08-17T16:55:10.463003+00:00",
+      "completed_at": "2026-08-17T16:55:10.464100+00:00",
       "completed_tasks": [],
       "failed_tasks": [],
       "artifacts": [],
@@ -48,8 +48,8 @@
     "task_creation": {
       "phase": "task_creation",
       "status": "completed",
-      "started_at": "2026-08-16T03:18:39.214449+00:00",
-      "completed_at": "2026-08-16T03:18:39.218479+00:00",
+      "started_at": "2026-08-17T16:55:10.464100+00:00",
+      "completed_at": "2026-08-17T16:55:10.466600+00:00",
       "completed_tasks": [],
       "failed_tasks": [],
       "artifacts": [],
@@ -58,8 +58,8 @@
     "workflow_generation": {
       "phase": "workflow_generation",
       "status": "completed",
-      "started_at": "2026-08-16T03:18:39.218479+00:00",
-      "completed_at": "2026-08-16T03:18:39.241657+00:00",
+      "started_at": "2026-08-17T16:55:10.466600+00:00",
+      "completed_at": "2026-08-17T16:55:10.516430+00:00",
       "completed_tasks": [],
       "failed_tasks": [],
       "artifacts": [],
@@ -68,8 +68,8 @@
     "provider_assignment": {
       "phase": "provider_assignment",
       "status": "completed",
-      "started_at": "2026-08-16T03:18:39.241657+00:00",
-      "completed_at": "2026-08-16T03:18:39.242626+00:00",
+      "started_at": "2026-08-17T16:55:10.516430+00:00",
+      "completed_at": "2026-08-17T16:55:10.517086+00:00",
       "completed_tasks": [],
       "failed_tasks": [],
       "artifacts": [],
@@ -78,8 +78,8 @@
     "execution_planning": {
       "phase": "execution_planning",
       "status": "completed",
-      "started_at": "2026-08-16T03:18:39.242626+00:00",
-      "completed_at": "2026-08-16T03:18:39.243957+00:00",
+      "started_at": "2026-08-17T16:55:10.517086+00:00",
+      "completed_at": "2026-08-17T16:55:10.518438+00:00",
       "completed_tasks": [],
       "failed_tasks": [],
       "artifacts": [],
@@ -88,8 +88,8 @@
     "executing": {
       "phase": "executing",
       "status": "completed",
-      "started_at": "2026-08-16T03:18:39.243957+00:00",
-      "completed_at": "2026-08-16T03:18:39.263497+00:00",
+      "started_at": "2026-08-17T16:55:10.518438+00:00",
+      "completed_at": "2026-08-17T16:55:10.541345+00:00",
       "completed_tasks": [],
       "failed_tasks": [],
       "artifacts": [],
@@ -98,8 +98,8 @@
     "verifying": {
       "phase": "verifying",
       "status": "completed",
-      "started_at": "2026-08-16T03:18:39.263497+00:00",
-      "completed_at": "2026-08-16T03:18:39.264574+00:00",
+      "started_at": "2026-08-17T16:55:10.541345+00:00",
+      "completed_at": "2026-08-17T16:55:10.542132+00:00",
       "completed_tasks": [],
       "failed_tasks": [],
       "artifacts": [],
@@ -108,8 +108,8 @@
     "documenting": {
       "phase": "documenting",
       "status": "completed",
-      "started_at": "2026-08-16T03:18:39.264574+00:00",
-      "completed_at": "2026-08-16T03:18:39.268558+00:00",
+      "started_at": "2026-08-17T16:55:10.542132+00:00",
+      "completed_at": "2026-08-17T16:55:10.550051+00:00",
       "completed_tasks": [],
       "failed_tasks": [],
       "artifacts": [],
@@ -118,8 +118,8 @@
     "deploying": {
       "phase": "deploying",
       "status": "completed",
-      "started_at": "2026-08-16T03:18:39.268558+00:00",
-      "completed_at": "2026-08-16T03:18:39.269989+00:00",
+      "started_at": "2026-08-17T16:55:10.550051+00:00",
+      "completed_at": "2026-08-17T16:55:10.551806+00:00",
       "completed_tasks": [],
       "failed_tasks": [],
       "artifacts": [],
@@ -142,11 +142,11 @@
     "deploying"
   ],
   "failed_phases": [],
-  "started_at": "2026-08-16T03:18:39.173256+00:00",
-  "updated_at": "2026-08-16T03:18:39.269989+00:00",
-  "completed_at": "2026-08-16T03:18:39.269501+00:00",
+  "started_at": "2026-08-17T16:55:10.440146+00:00",
+  "updated_at": "2026-08-17T16:55:10.551806+00:00",
+  "completed_at": "2026-08-17T16:55:10.551163+00:00",
   "metadata": {
-    "description": "dinosaur  jump game",
-    "created_at": "2026-08-16T03:18:39.173256+00:00"
+    "description": "I want to build an AI tourism platform.",
+    "created_at": "2026-08-17T16:55:10.440146+00:00"
   }
 }

@@ -45,9 +45,24 @@ class CopilotDesktopWorker(DesktopWorker):
 
     def _execute_desktop_task(self, task_payload: Dict[str, Any]) -> DesktopWorkerTaskResult:
         prompt = task_payload.get("prompt", "Generate Unit Tests")
-        self.ui_transport.dispatch_prompt_to_ide(prompt)
-        return DesktopWorkerTaskResult(
-            success=True,
-            output_text=f"GitHub Copilot task completed: {prompt[:80]}. TASK COMPLETE.",
-            metadata={"worker": "copilot_desktop", "transport": "ui_automation"},
-        )
+        try:
+            output_text, meta = self.ui_transport.capture_response(prompt, timeout_seconds=30.0)
+            if not output_text or output_text.strip().startswith(("Error", "Failed", "[Error]")):
+                raise RuntimeError("Captured response from VS Code / GitHub Copilot GUI was empty or an error message")
+
+            logger.info("Captured real GitHub Copilot Desktop response (%d chars): %r", len(output_text), output_text[:200])
+            return DesktopWorkerTaskResult(
+                success=True,
+                output_text=output_text,
+                metadata={"worker": "copilot_desktop", "transport": "ui_automation", **meta},
+            )
+        except Exception as exc:
+            err_msg = f"GitHub Copilot UI automation capture failed: {exc}"
+            logger.warning(err_msg)
+            return DesktopWorkerTaskResult(
+                success=False,
+                output_text=err_msg,
+                error_message=str(exc),
+                generated_files=[],
+                metadata={"worker": "copilot_desktop", "transport": "ui_automation", "error": str(exc)},
+            )
