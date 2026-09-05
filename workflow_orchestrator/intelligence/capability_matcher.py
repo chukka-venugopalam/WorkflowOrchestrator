@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from typing import Any, Optional
 
 from workflow_orchestrator.intelligence.agent_registry import AgentRegistry
+from workflow_orchestrator.intelligence.provider_registry import ProviderRegistry
 from workflow_orchestrator.intelligence.models import (
     Capability,
     RoutingCandidate,

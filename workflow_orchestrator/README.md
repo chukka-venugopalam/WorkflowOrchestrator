@@ -1,5 +1,11 @@
 # Workflow Orchestrator v2
 
+> **Note:** this file documents the YAML-workflow + plugin automation engine
+> (`workflow run`/`schedule`/`scan`/`plugins`), a separate subsystem from the
+> main AI build pipeline (`workflow build`). See the repo-root README.md for
+> the primary system.
+
+
 A **reusable workflow automation framework** that lets you define, schedule, and execute automation workflows using YAML files and a plugin system.
 
 ## Features

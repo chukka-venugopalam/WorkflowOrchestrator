@@ -12,6 +12,11 @@ from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:
     from workflow_orchestrator.core.kernel import Kernel
+    from workflow_orchestrator.integrations.cli_manager import CliManager
+    from workflow_orchestrator.integrations.environment_detector import EnvironmentDetector
+    from workflow_orchestrator.integrations.health_monitor import HealthMonitor
+    from workflow_orchestrator.integrations.provider_detector import ProviderDetector
+    from workflow_orchestrator.integrations.tool_detector import ToolDetector
 
 logger = logging.getLogger(__name__)
 

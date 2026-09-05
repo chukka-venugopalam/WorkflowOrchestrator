@@ -66,7 +66,7 @@ class FlowExecutionRecord:
     project_name: str
     idea_description: str
     phase: str
-    build_result: Optional[BuildResult] = None
+    build_result: Optional[Dict[str, Any]] = None
     duration_seconds: float = 0.0
     status: str = "completed"
     error: Optional[str] = None

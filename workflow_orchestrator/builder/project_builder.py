@@ -49,6 +49,7 @@ from workflow_orchestrator.builder.data_models import (
     ProjectState,
     ResourceAssignment,
     TaskGraph,
+    TaskNode,
     TaskStatus,
     VerificationResult,
 )

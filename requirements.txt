@@ -1,12 +1,23 @@
 # Workflow Orchestrator - Python Dependencies
 # Install with: pip install -r requirements.txt
+# (fastapi/uvicorn removed -- those belonged to a leftover generated demo
+#  artifact, not the real product; see git history if you need them back)
 
 pyperclip>=1.8.2
 PyYAML>=6.0
 rich>=13.0
 typer>=0.9.0
 apscheduler>=3.10.0
-fastapi>=0.110.0
 httpx>=0.25.0
 pydantic>=2.0.0
-uvicorn>=0.29.0
+
+# Optional: GUI/browser automation for the desktop-worker transports.
+# Not required for CLI-based workers. Prefer `pip install -e .[automation]`
+# (handles the pywinauto Windows-only marker correctly); listed here too
+# for anyone using requirements.txt directly.
+# pywinauto>=0.6.9  ; Windows only
+# pyautogui>=0.9.54
+# pytesseract>=0.3.10
+# mss>=10.0.0
+# pillow>=10.0.0
+# playwright>=1.40.0

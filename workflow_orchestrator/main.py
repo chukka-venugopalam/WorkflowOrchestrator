@@ -178,7 +178,7 @@ def handle_continue_project(orchestrator: Orchestrator) -> None:
 
     console.print("\n[bold cyan]Select Project to Resume:[/]")
     for idx, s in enumerate(sessions, 1):
-        console.print(f"  [cyan]{idx}.[/] {s.session_id} (Project: {s.project_id or 'default'}, State: {s.state})")
+        console.print(f"  [cyan]{idx}.[/] {s.session_id} (Project: {s.project or 'default'}, State: {s.state})")
 
     choice = Prompt.ask("Enter selection number", default="1")
     try:
@@ -328,6 +328,21 @@ def main() -> None:
     """Main application loop."""
     from workflow_orchestrator.core.logger import configure_logging
     configure_logging(level="INFO", log_to_file=True, log_to_console=True)
+
+    _BANNER = r"""
+__        _____  ____  _  _______ _     _____        __
+\ \      / / _ \|  _ \| |/ /  ___| |   / _ \ \      / /
+ \ \ /\ / / | | | |_) | ' /| |_  | |  | | | \ \ /\ / / 
+  \ V  V /| |_| |  _ <| . \|  _| | |__| |_| |\ V  V /  
+   \_/\_/  \___/|_| \_\_|\_\_|   |_____\___/  \_/\_/   
+  ___  ____   ____ _   _ _____ ____ _____ ____      _  _____ ___  ____  
+ / _ \|  _ \ / ___| | | | ____/ ___|_   _|  _ \    / \|_   _/ _ \|  _ \ 
+| | | | |_) | |   | |_| |  _| \___ \ | | | |_) |  / _ \ | || | | | |_) |
+| |_| |  _ <| |___|  _  | |___ ___) || | |  _ <  / ___ \| || |_| |  _ < 
+ \___/|_| \_\\____|_| |_|_____|____/ |_| |_| \_\/_/   \_\_| \___/|_| \_\
+"""
+    console.print(f"[bold cyan]{_BANNER}[/]")
+    console.print("[dim]AI Operating System -- build software with the tools you already have[/]\n")
 
     console.print("\n[bold cyan]Booting Workflow Orchestrator AI Operating System...[/]\n")
     orchestrator = Orchestrator.get_instance()

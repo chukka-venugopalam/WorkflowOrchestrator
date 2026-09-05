@@ -1,6 +1,7 @@
 """Typer-based CLI for the Workflow Orchestrator.
 
 Provides the ``workflow`` command with subcommands:
+    - ``workflow build`` — Build a project end-to-end from a single prompt.
     - ``workflow run`` — Execute a YAML workflow.
     - ``workflow list`` — List available workflows.
     - ``workflow schedule`` — Schedule a workflow.
@@ -79,6 +80,116 @@ def _get_kernel() -> Any:
     orch.boot(show_dashboard=False)
     return orch.kernel
 
+
+# ---------------------------------------------------------------------------
+# build -- end-to-end project creation from a single prompt
+# ---------------------------------------------------------------------------
+
+
+@app.command()
+def build(
+    idea: str = typer.Argument(
+        ..., help="One-line description of what to build, e.g. 'a sudoku game with a web ui'"
+    ),
+    name: Optional[str] = typer.Option(
+        None, "--name", "-n", help="Project folder name (auto-generated from the idea if omitted)"
+    ),
+    path: Optional[Path] = typer.Option(
+        None, "--path", "-p", help="Target directory (defaults to the configured project output root)"
+    ),
+) -> None:
+    """Build a project end-to-end from a single prompt.
+
+    Runs the full pipeline: classify the idea, scaffold the project, dispatch
+    tasks to whatever real AI tools are installed and idle, verify completion
+    against actual file changes, and report a real completed/partial/failed
+    status. Equivalent to "1. Create Project" in `workflow gui`, but scriptable.
+
+    NOTE: if the classifier can't tell what kind of project this is, it will
+    still prompt interactively for clarification (same behavior as the menu).
+    A fully non-interactive mode is not implemented yet -- this command does
+    not guess at that fallback behavior.
+    """
+    import re
+    import time
+
+    from workflow_orchestrator.config.config_manager import ConfigurationManager
+    from workflow_orchestrator.orchestrator.orchestrator import Orchestrator
+
+    if not idea.strip():
+        console.print("[red]Project description cannot be empty.[/]")
+        raise typer.Exit(code=2)
+
+    clean_idea = re.sub(r"[^a-zA-Z0-9_-]+", "_", idea[:25].strip().lower()).strip("_")
+    folder_name = name.strip() if name and name.strip() else (clean_idea or f"project_{int(time.time())}")
+
+    resolved_path = (
+        path.expanduser().resolve()
+        if path
+        else (ConfigurationManager().get_project_output_root() / folder_name)
+    )
+    try:
+        resolved_path.mkdir(parents=True, exist_ok=True)
+    except Exception as exc:
+        console.print(f"[bold red]Cannot create project directory at '{resolved_path}': {exc}[/]")
+        raise typer.Exit(code=2)
+
+    console.print(f"\n[bold cyan]=== Build: {idea} ===[/]")
+    console.print(f"[dim]Target: {resolved_path}[/]\n")
+
+    def _prompt_user_fn(description: str, scores: dict) -> str:
+        console.print("\n[bold yellow]The project type is unclear from your description.[/]")
+        console.print(f"[dim]Original description: {description}[/]")
+        return typer.prompt(
+            "Please clarify what kind of project this is (e.g. 'a game', 'a mobile app', 'a CLI tool')",
+            default="",
+        )
+
+    orch = Orchestrator.get_instance()
+    orch.boot(show_dashboard=False)
+    rec = orch.create_project(
+        idea=idea,
+        project_name=name.strip() if name else folder_name,
+        workspace_dir=resolved_path,
+        prompt_user_fn=_prompt_user_fn,
+    )
+
+    if rec.status == "completed":
+        console.print(
+            f"\n[bold green]Project '{rec.project_name}' created and built successfully "
+            f"at {resolved_path} in {rec.duration_seconds:.1f}s![/]"
+        )
+    elif rec.status == "partial":
+        failed_str = ", ".join(rec.failed_tasks) if rec.failed_tasks else "some tasks"
+        total_cnt = len(rec.failed_tasks) + len(rec.succeeded_tasks)
+        console.print(
+            f"\n[bold yellow]Project '{rec.project_name}' partially failed:[/] "
+            f"{len(rec.failed_tasks)}/{total_cnt} tasks did not complete ({failed_str})"
+        )
+        raise typer.Exit(code=1)
+    else:
+        console.print(
+            f"\n[bold red]Project '{rec.project_name}' build failed:[/] "
+            f"{rec.error or 'Pipeline execution failed'}"
+        )
+        raise typer.Exit(code=2)
+
+
+# ---------------------------------------------------------------------------
+# gui -- launch the interactive Rich menu (backward compat)
+# ---------------------------------------------------------------------------
+
+
+@app.command()
+def gui() -> None:
+    """Launch the original interactive menu (create/continue/list projects,
+    providers, agents, diagnostics, and more). This is the same application
+    `python -m workflow_orchestrator` runs -- kept as a named command since
+    the rest of this CLI had grown around it without an actual entry point.
+    """
+    from workflow_orchestrator.main import main as _menu_main
+
+    _menu_main()
 
 # ---------------------------------------------------------------------------
 # doctor — complete diagnostics

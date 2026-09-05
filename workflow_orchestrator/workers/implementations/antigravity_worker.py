@@ -13,6 +13,7 @@ from typing import Any, Dict, List
 from workflow_orchestrator.workers.desktop_worker import (
     DesktopWorker,
     DesktopWorkerTaskResult,
+    get_workspace_snapshot,
 )
 
 logger = logging.getLogger(__name__)
