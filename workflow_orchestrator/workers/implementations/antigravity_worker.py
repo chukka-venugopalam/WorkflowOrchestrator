@@ -54,14 +54,19 @@ class AntigravityDesktopWorker(DesktopWorker):
                 metadata={"worker": "antigravity_desktop", "simulation_mode": True, "reason": "tool_not_installed"},
             )
 
-        cmd = [self.cli_path, "task", "run", "--prompt", prompt]
+        # Real agy CLI (confirmed v1.1.27+) only supports -p/--print,
+        # -i/--prompt-interactive, or stdin for prompts -- "task run"
+        # was never a real subcommand. --dangerously-skip-permissions
+        # avoids agy pausing on interactive tool-permission prompts
+        # that would never get answered in a non-interactive subprocess.
+        cmd = [self.cli_path, "--dangerously-skip-permissions", "-p", prompt]
 
         # Track initial workspace files for generated_files detection
         before_files = get_workspace_snapshot(project_root)
 
         try:
             res = subprocess.run(cmd, capture_output=True, text=True, cwd=str(project_root), timeout=180)
-            if res.returncode == 0:
+            if res.returncode == 0 and res.stdout.strip():
                 generated: List[Path] = []
                 if project_root.exists():
                     for p in project_root.rglob("*"):
@@ -74,9 +79,29 @@ class AntigravityDesktopWorker(DesktopWorker):
 
                 return DesktopWorkerTaskResult(
                     success=True,
-                    output_text=res.stdout or "Antigravity task completed successfully. TASK COMPLETE.",
+                    output_text=res.stdout,
                     generated_files=generated,
                     metadata={"worker": "antigravity_desktop", "simulation_mode": False},
+                )
+
+            if res.returncode == 0:
+                # Exit 0 but empty stdout: matches a confirmed, currently-open
+                # agy bug where --print/-p silently drops stdout in non-TTY
+                # (subprocess) contexts. Report honestly as a failure rather
+                # than papering over it with a fake completion string that
+                # would trip the completion-marker regex on fabricated text.
+                err_msg = (
+                    "Antigravity CLI exited successfully but produced no output "
+                    "(known agy issue: -p/--print can silently drop stdout when "
+                    "run as a subprocess). Not treating this as completion."
+                )
+                logger.warning(err_msg)
+                return DesktopWorkerTaskResult(
+                    success=False,
+                    output_text=err_msg,
+                    error_message=err_msg,
+                    generated_files=[],
+                    metadata={"worker": "antigravity_desktop", "simulation_mode": False, "reason": "empty_stdout_exit_0"},
                 )
 
             err_text = res.stderr.strip() or res.stdout.strip() or f"Antigravity CLI process failed with exit code {res.returncode}"

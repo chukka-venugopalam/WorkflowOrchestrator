@@ -2,6 +2,7 @@
 
 Provides the ``workflow`` command with subcommands:
     - ``workflow build`` — Build a project end-to-end from a single prompt.
+    - ``workflow browser-login`` — One-time visible login for gemini/chatgpt/claude.
     - ``workflow run`` — Execute a YAML workflow.
     - ``workflow list`` — List available workflows.
     - ``workflow schedule`` — Schedule a workflow.
@@ -190,6 +191,68 @@ def gui() -> None:
     from workflow_orchestrator.main import main as _menu_main
 
     _menu_main()
+
+# ---------------------------------------------------------------------------
+# browser-login -- one-time interactive auth for the browser transport
+# ---------------------------------------------------------------------------
+
+
+@app.command(name="browser-login")
+def browser_login(
+    provider: str = typer.Argument(
+        ..., help="Provider to log into: gemini, chatgpt, or claude"
+    ),
+) -> None:
+    """One-time interactive login for the browser-based conversational providers.
+
+    The automated browser transport (desktop_browser_transport.py) runs
+    headless against an isolated profile at
+    ~/.config/workflow_orchestrator/browser_profile -- which starts with
+    zero cookies and no way to authenticate, since a headless browser has
+    no visible window to log into. This command opens that exact same
+    profile, but visibly, so you can log in once by hand. The session is
+    saved to that profile and every future headless automated run reuses
+    it -- you only need to do this once per provider (and again if the
+    session ever expires).
+    """
+    from pathlib import Path
+
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        console.print("[bold red]playwright is not installed.[/]")
+        console.print("Install it with: pip install -e \".[automation]\"  then: playwright install")
+        raise typer.Exit(code=2)
+
+    url_map = {
+        "gemini": "https://gemini.google.com/app",
+        "chatgpt": "https://chatgpt.com",
+        "claude": "https://claude.ai/chats",
+    }
+    url = url_map.get(provider.lower())
+    if not url:
+        console.print(f"[red]Unknown provider: {provider}[/]")
+        console.print(f"Supported: {', '.join(url_map.keys())}")
+        raise typer.Exit(code=1)
+
+    user_data_dir = Path.home() / ".config" / "workflow_orchestrator" / "browser_profile"
+    user_data_dir.mkdir(parents=True, exist_ok=True)
+
+    console.print(f"\n[bold cyan]Opening a real, visible browser window for {provider}...[/]")
+    console.print("[dim]Log in normally in the window that opens. Come back to this terminal and press Enter when you can see the chat interface.[/]\n")
+
+    with sync_playwright() as p:
+        context = p.chromium.launch_persistent_context(
+            user_data_dir=str(user_data_dir),
+            headless=False,
+            args=["--no-sandbox", "--disable-setuid-sandbox"],
+        )
+        page = context.new_page()
+        page.goto(url, wait_until="commit", timeout=25000)
+        input("Press Enter here once you're logged in... ")
+        context.close()
+
+    console.print(f"[bold green]Saved to {user_data_dir}.[/] Future automated `workflow build` runs should now be able to reach {provider}.")
 
 # ---------------------------------------------------------------------------
 # doctor — complete diagnostics
